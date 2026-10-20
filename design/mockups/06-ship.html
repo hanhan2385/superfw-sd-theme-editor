@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>06 Ship</title><link rel="stylesheet" href="base.css">
+<style>
+  .ship{display:grid;grid-template-columns:1fr 318px;gap:12px;width:780px}
+  .opt{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:3px;border:1px solid transparent;font-size:11px}
+  .opt .rad{width:11px;height:11px;border-radius:50%;border:1px solid var(--line-3);flex:none}
+  .opt.on{background:var(--panel-2);border-color:var(--line)}
+  .opt.on .rad{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--panel-2),inset 0 0 0 8px var(--accent)}
+  .opt small{display:block;color:var(--dim);font-size:9px;margin-top:2px}
+  .segsm{display:flex;flex-direction:column;gap:2px}
+  .hist{font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:8px;padding:3px 2px}
+  .hist .c{width:12px;height:12px;border-radius:2px;border:1px solid rgba(255,255,255,.2)}
+  .hist .tm{margin-left:auto;font:9px/1 var(--mono);color:var(--dim)}
+  .card{border:1px solid var(--line);background:rgba(19,19,17,.76);border-radius:4px}
+  .card-h{height:38px;display:flex;align-items:center;gap:9px;padding:0 12px;border-bottom:1px solid var(--line)}
+  .card-h .t{font-size:11.5px;font-weight:600}
+  .card-h .s{font:9.5px/1 var(--mono);color:var(--dim)}
+  .card-h .r{margin-left:auto}
+  .hero{padding:14px 14px 12px;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line)}
+  .hero .big{font:600 27px/1 var(--mono);letter-spacing:-.02em}
+  .hero .big span{font-size:12px;color:var(--dim);letter-spacing:0}
+  .hero .lbl{font:9px/1 var(--mono);letter-spacing:.14em;color:var(--dim);margin-bottom:6px}
+  .hero .meta{font-size:10.5px;color:var(--muted);line-height:1.7}
+  .stat{display:flex;gap:18px;margin-left:auto}
+  .stat div{text-align:right}
+  .stat b{display:block;font:600 15px/1 var(--mono)}
+  .stat i{display:block;font:9px/1 var(--mono);color:var(--dim);font-style:normal;margin-top:5px}
+
+  .files{padding:8px 8px 10px}
+  .file{display:grid;grid-template-columns:16px 1fr 58px 48px 14px;gap:9px;align-items:center;padding:8px 6px;border-radius:3px;font-size:11px}
+  .file + .file{border-top:1px solid rgba(236,232,222,.05)}
+  .file .ic{color:var(--dim)}
+  .file .nm{font-family:var(--mono);font-size:10.5px}
+  .file .nm small{display:block;font-family:var(--ui);font-size:9.5px;color:var(--dim);margin-top:2px}
+  .file .sz{font:9.5px/1 var(--mono);color:var(--muted);text-align:right}
+  .file .tp{font:8.5px/1 var(--mono);color:var(--dim);border:1px solid var(--line-2);border-radius:2px;padding:3px 4px;text-align:center}
+  .file .ck{color:var(--ok);text-align:center}
+  .file.main{background:rgba(217,255,87,.045)}
+
+  .chk{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;padding:6px 12px;font-size:10.5px;color:var(--muted)}
+  .chk .d{color:var(--ok);font-size:11px}
+  .chk .v{font:9px/1 var(--mono);color:var(--dim)}
+
+  .seg2{display:flex;border:1px solid var(--line-2);border-radius:3px;overflow:hidden;margin:10px 12px 0}
+  .seg2 span{flex:1;text-align:center;font-size:10px;padding:7px 0;color:var(--dim);border-right:1px solid var(--line)}
+  .seg2 span:last-child{border:0}
+  .seg2 span.on{background:var(--accent);color:#0B0B09;font-weight:600}
+
+  .matrix{width:100%;border-collapse:collapse;font-size:10.5px}
+  .matrix th,.matrix td{padding:7px 8px;text-align:left;border-bottom:1px solid rgba(236,232,222,.06)}
+  .matrix th{font:9px/1 var(--mono);letter-spacing:.08em;color:var(--dim);font-weight:500;text-transform:uppercase}
+  .matrix td{color:var(--muted)}
+  .matrix td.n{color:var(--text);font-size:10.5px}
+  .matrix .ok{color:var(--ok)}
+  .matrix .patch{color:var(--warn)}
+  .matrix .no{color:var(--dim)}
+  .matrix tr.cur td{background:rgba(217,255,87,.04)}
+  .tag-s{font:8.5px/1 var(--mono);padding:3px 5px;border-radius:2px;border:1px solid currentColor;display:inline-block}
+  .tag-s.ok{color:var(--ok);border-color:rgba(127,227,168,.35)}
+  .tag-s.patch{color:var(--warn);border-color:rgba(255,196,107,.35)}
+  .tag-s.no{color:var(--dim)}
+  .cmd{font:10px/1.7 var(--mono);color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin:10px 12px 0}
+  .cmd b{color:var(--text);font-weight:500}
+  .steps{font-size:10.5px;line-height:1.8;color:var(--muted);padding:10px 12px}
+  .steps b{color:var(--text);font-weight:600}
+</style></head><body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="mark">S</div><div><div class="word">SUPERFW</div><div class="sub">Theme Studio</div></div></div>
+    <div class="divider"></div>
+    <div class="doc"><span class="name">Aurora</span><span class="draft">v1.0</span></div>
+    <div class="chip"><span class="dot" style="color:var(--ok)"></span><b>SuperCard SD</b> · FW 1.6.2 <span style="color:var(--dim)">▾</span></div>
+    <div class="spacer"></div>
+    <div class="chip ok">✓ 校验通过 · 0 阻塞</div>
+    <button class="btn ghost">导出预览图</button>
+    <button class="btn primary">生成并下载
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
+    </button>
+  </header>
+
+  <div class="main">
+    <nav class="rail">
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg><span class="lbl">画布</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">资产</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4v4.1a3.5 3.5 0 0 0 3.5 3.5h6.1"/><path d="M8.4 6h6.1a3.5 3.5 0 0 1 3.5 3.5v6.1"/></svg><span class="lbl">行为</span></div>
+      <div class="item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="lbl">发布</span></div>
+      <div class="grow"></div>
+    </nav>
+
+    <aside class="panel">
+      <div class="phead"><div class="t">目标与版本</div><div style="font-size:10px;color:var(--dim)">1.6.2</div></div>
+      <div class="pbody">
+        <div class="sect">
+          <div class="sect-h"><div class="t">设备</div><div class="a">SD 卡</div></div>
+          <div class="segsm">
+            <div class="opt on"><span class="rad"></span><div>SuperCard SD<small>标准版 · SDHC / exFAT</small></div></div>
+            <div class="opt"><span class="rad"></span><div>MiniSD<small>需 1.5+ 固件</small></div></div>
+            <div class="opt"><span class="rad"></span><div>Lite<small>无内置模拟器</small></div></div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="sect">
+          <div class="sect-h"><div class="t">固件版本</div><div class="a">目标</div></div>
+          <div class="segsm">
+            <div class="opt on"><span class="rad"></span><div>1.6.x<small>完整支持 · theme.bin</small></div></div>
+            <div class="opt"><span class="rad"></span><div>1.5.x<small>降级为 6 角色 + 片段</small></div></div>
+            <div class="opt"><span class="rad"></span><div>1.4.x<small>仅颜色 · 需重新编译</small></div></div>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="sect">
+          <div class="sect-h"><div class="t">产物格式</div><div class="a">多选</div></div>
+          <div class="chk" style="padding-left:2px"><span class="d">✓</span><span>theme.bin（推荐）</span><span class="v">SD</span></div>
+          <div class="chk" style="padding-left:2px"><span class="d">✓</span><span>ui-settings.txt 片段</span><span class="v">128 B</span></div>
+          <div class="chk" style="padding-left:2px"><span class="d">✓</span><span>回滚脚本</span><span class="v">自动</span></div>
+          <div class="chk" style="padding-left:2px"><span style="color:var(--dim)">○</span><span>.fw 固件补丁</span><span class="v">高级</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="stagebar">
+        <div class="crumb"><b>发布</b><span class="sep">/</span>Aurora v1.0</div>
+        <div class="dims">9 项校验 · 4 个产物</div>
+        <div class="spacer"></div>
+        <div class="toggle on"><span class="tbox"></span>包含预览图</div>
+        <div class="toggle on"><span class="tbox"></span>写入校验和</div>
+      </div>
+      <div class="canvaswrap" style="padding:16px;align-items:flex-start">
+        <div class="gridbg"></div>
+        <div class="ship">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="card">
+              <div class="hero">
+                <div>
+                  <div class="lbl">RELEASE MANIFEST</div>
+                  <div class="big">Aurora <span>v1.0</span></div>
+                  <div class="meta" style="margin-top:8px">7 个角色 · 8 个屏幕 · 28 图标 · 3 字库<br>目标 SuperCard SD · FW 1.6.2</div>
+                </div>
+                <div class="stat">
+                  <div><b>2.4<span style="font-size:9px;color:var(--dim)"> KB</span></b><i>主题</i></div>
+                  <div><b>1</b><i>注入</i></div>
+                  <div><b style="color:var(--ok)">9/9</b><i>校验</i></div>
+                </div>
+              </div>
+              <div class="files">
+                <div class="file main"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h7l2 2h7v14H4z"/></svg></span><span class="nm">theme.bin<small>二进制主题包 · 含调色板与图标索引</small></span><span class="sz">2.4 KB</span><span class="tp">主产物</span><span class="ck">✓</span></div>
+                <div class="file"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg></span><span class="nm">ui-settings.txt<small>theme=6 · 兼容 1.5.x 回退</small></span><span class="sz">128 B</span><span class="tp">片段</span><span class="ck">✓</span></div>
+                <div class="file"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5-5 4 4 3-3 4 4"/></svg></span><span class="nm">preview/ · 8 张 PNG<small>240×160 · 3× 导出</small></span><span class="sz">186 KB</span><span class="tp">预览</span><span class="ck">✓</span></div>
+                <div class="file"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12a8 8 0 1 0 3-6"/><path d="M4 4v5h5"/></svg></span><span class="nm">rollback.sh<small>恢复出厂 White 主题</small></span><span class="sz">412 B</span><span class="tp">回滚</span><span class="ck">✓</span></div>
+              </div>
+              <div style="border-top:1px solid var(--line)">
+                <div class="chk"><span class="d">✓</span><span>调色板槽位 ≤ 16</span><span class="v">14 / 16</span></div>
+                <div class="chk"><span class="d">✓</span><span>正文对比度 ≥ 4.5:1</span><span class="v">4.6 : 1</span></div>
+                <div class="chk"><span class="d">✓</span><span>字库覆盖目标语言</span><span class="v">zh / en / ja</span></div>
+                <div class="chk"><span class="d">✓</span><span>图标尺寸 16×16 · 4bpp</span><span class="v">28 / 28</span></div>
+                <div class="chk"><span class="d">✓</span><span>主题名长度 ≤ 31 字节</span><span class="v">6 B</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="card">
+              <div class="card-h"><div class="t">兼容矩阵</div><div class="s">只读</div></div>
+              <table class="matrix">
+                <tr><th>能力</th><th>1.4</th><th>1.5</th><th>1.6</th></tr>
+                <tr><td class="n">颜色角色</td><td><span class="tag-s patch">降级</span></td><td><span class="tag-s ok">✓</span></td><td><span class="tag-s ok">✓</span></td></tr>
+                <tr><td class="n">图标替换</td><td><span class="tag-s patch">补丁</span></td><td><span class="tag-s patch">补丁</span></td><td><span class="tag-s ok">✓</span></td></tr>
+                <tr><td class="n">字体子集</td><td><span class="tag-s ok">✓</span></td><td><span class="tag-s ok">✓</span></td><td><span class="tag-s ok">✓</span></td></tr>
+                <tr><td class="n">标签顺序</td><td><span class="tag-s no">—</span></td><td><span class="tag-s patch">补丁</span></td><td><span class="tag-s ok">✓</span></td></tr>
+                <tr class="cur"><td class="n">theme.bin</td><td><span class="tag-s no">—</span></td><td><span class="tag-s patch">注入</span></td><td><span class="tag-s ok">✓ 当前</span></td></tr>
+              </table>
+              <div style="padding:8px 12px 10px;font-size:9.5px;line-height:1.6;color:var(--dim)">
+                1.4.x 无主题加载器：只能把颜色写回 <span class="mono">themes[]</span> 并重新编译固件。
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><div class="t">安装 · 两条路径</div><div class="s">1.6 / 1.7</div></div>
+              <div class="steps">
+                <b>1.7+</b> 把 <span class="mono" style="color:var(--text)">theme.bin</span> 放到 <span class="mono" style="color:var(--text)">/.superfw/themes/</span>，在界面中选择<br>
+                <b>1.6.x</b> 用「注入固件」把主题写进 base .fw，再按官方流程刷入<br>
+                <b>最后</b> 重启 GBA 使调色板生效
+              </div>
+              <div class="cmd"><b>sha256</b> 9f2c1a77e0b4…c41d<br><b>size</b> 2 412 bytes · <b>crc32</b> 7A31C0DE</div>
+            </div>
+          </div>
+            <div class="card" style="grid-column:1/-1">
+              <div class="card-h"><div class="t">预览图</div><div class="s">240×160 · 3× · PNG</div><div class="r"><span class="chip" style="height:20px;font-size:9.5px">全选 8 张</span></div></div>
+              <div style="display:flex;gap:8px;padding:12px"><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:34%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:24px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:26px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">logo</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:37%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:28px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:30px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">recent</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:40%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:32px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:34px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">browser</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:43%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:36px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:38px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">settings</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:46%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:40px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:42px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">ui</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:49%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:44px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:46px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">tools</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:52%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:48px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:50px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">about</div></div><div style="flex:1"><div style="height:74px;border:1px solid var(--line-2);border-radius:2px;background:var(--t-bg);position:relative;overflow:hidden"><div style="position:absolute;left:0;right:0;top:0;height:8px;background:var(--t-surface)"></div><div style="position:absolute;left:4px;top:14px;width:55%;height:3px;background:var(--t-ink);opacity:.5"></div><div style="position:absolute;left:4px;top:52px;width:70%;height:6px;background:var(--t-hi)"></div><div style="position:absolute;left:6px;top:54px;width:26%;height:2px;background:var(--t-accent)"></div></div><div style="font:9px/1 var(--mono);color:var(--dim);margin-top:5px;text-align:center">igm</div></div></div>
+            </div>
+        </div>
+      </div>
+
+      <div class="film">
+        <div class="thumbs">
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:60%"></div></div></div><div class="cap">启动 Logo</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">最近游玩</div></div>
+          <div class="thumb on"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">文件浏览</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr" style="width:55%"></div></div></div><div class="cap">设置<span class="bad"></span></div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:70%"></div></div></div><div class="cap">界面</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr" style="width:45%"></div></div></div><div class="cap">工具</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:30%;margin:4px auto"></div></div></div><div class="cap">关于</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">游戏内菜单</div></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="insp">
+      <div class="itabs"><div class="itab on">导出</div><div class="itab">兼容</div><div class="itab">历史</div></div>
+      <div class="ibody">
+        <div class="iblock">
+          <div class="ilabel">导出选项</div>
+          <div class="chk" style="padding:6px 0"><span class="d">✓</span><span>压缩图标调色板</span><span class="v">省 18%</span></div>
+          <div class="chk" style="padding:6px 0"><span class="d">✓</span><span>裁剪未用字库</span><span class="v">-12 KB</span></div>
+          <div class="chk" style="padding:6px 0"><span class="d">✓</span><span>写入回滚信息</span><span class="v">推荐</span></div>
+          <div class="chk" style="padding:6px 0"><span style="color:var(--dim)">○</span><span>内嵌预览截图</span><span class="v">+8 KB</span></div>
+        </div>
+        <div class="iblock">
+          <div class="ilabel">版本策略</div>
+          <div style="font-size:10.5px;line-height:1.65;color:var(--muted)">
+            以 <b style="color:var(--text)">1.6.2</b> 为基线生成；对 1.5.x 自动产出 6 角色降级版，对 1.4.x 输出重新编译说明。
+          </div>
+        </div>
+        <div class="note" style="border-color:rgba(255,196,107,.26)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none;margin-top:1px"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <div><b>1.5.x 将丢失差异化高亮</b><br>旧固件只有 6 个颜色槽，Highlight 会合并到 Surface Alt。</div>
+        </div>
+        <div class="iblock">
+          <div class="ilabel">最近导出</div>
+          <div class="hist"><span class="c" style="background:#6FF2C0"></span>Aurora v0.9<span class="tm">昨天</span></div>
+          <div class="hist"><span class="c" style="background:#F2A26F"></span>Ember v0.4<span class="tm">10-14</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span class="ok">● 9 / 9 校验通过</span>
+    <span>theme.bin · 2 412 B · crc32 7A31C0DE</span>
+    <div class="r"><span>目标 1.6.2</span><span>1.5 降级包已生成</span><span>回滚可用</span></div>
+  </footer>
+</div>
+</body></html>

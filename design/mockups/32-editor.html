@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>32 Editor</title><link rel="stylesheet" href="base.css">
+<style>
+  .main{grid-template-columns:300px 1fr 320px}
+  .slot{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;height:52px;padding:0 10px;border-radius:3px;border:1px solid transparent}
+  .slot.on{background:var(--panel-3);border-color:var(--line-2)}
+  .slot .sw{width:34px;height:34px;border-radius:2px;border:1px solid rgba(255,255,255,.22)}
+  .slot .nm{font-size:12px;line-height:1.2}
+  .slot .nm small{display:block;font:9px/1.3 var(--mono);color:var(--dim);margin-top:3px}
+  .slot .hx{font:10px/1 var(--mono);color:var(--muted)}
+  .empty{font-size:11px;color:var(--dim);line-height:1.7;padding:2px 10px}
+  .thumb .frame{background:#fff!important;border-color:#555!important}
+  .thumb .mini .mt{background:#AAAAAA!important;opacity:1!important}
+  .thumb .mini .mr{background:rgba(0,0,0,.12)!important}
+  .thumb .mini .mr.hl{background:rgba(153,153,187,.75)!important}
+  .thumb.on .frame{border-color:var(--accent)!important}
+  .code{font:11px/1.75 var(--mono);background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:10px 12px;color:var(--muted)}
+  .code b{color:var(--text);font-weight:500}
+  .code i{color:var(--dim);font-style:normal}
+  .steps{font-size:11px;line-height:1.85;color:var(--muted)}
+  .steps b{color:var(--text)}
+  .note2{border:1px solid rgba(255,196,107,.26);background:rgba(255,196,107,.06);border-radius:3px;padding:9px 10px;font-size:10.5px;line-height:1.55;color:#E8CFA8}
+  .note2 b{color:var(--warn)}
+  .imgwrap{position:relative;width:720px;height:480px}
+  .imgwrap img{width:720px;height:480px;display:block;image-rendering:pixelated;border-radius:2px;box-shadow:0 0 0 1px #000}
+</style></head><body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="mark">S</div><div><div class="word">SUPERFW</div><div class="sub">Theme editor</div></div></div>
+    <div class="divider"></div>
+    <div class="doc"><span class="name">White · 副本</span><span class="draft">theme.txt</span></div>
+    <div class="chip"><b>SD 版</b> · 固件 0.21</div>
+    <div class="spacer"></div>
+    <div class="chip">6 个调色板值 · 12 字节</div>
+    <button class="btn ghost">重置为出厂</button>
+    <button class="btn primary">下载 theme.txt
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
+    </button>
+  </header>
+
+  <div class="main">
+    <aside class="panel" style="border-right:1px solid var(--line)">
+      <div class="phead"><div class="t">颜色槽位</div><div style="font-size:10px;color:var(--dim)">themes[] 的 6 个字段</div></div>
+      <div class="pbody" style="gap:2px;padding-top:8px">
+        <div class="slot"><div class="sw" style="background:#AAAAAA"></div><div class="nm">FG<small>顶栏 / 底栏</small></div><div class="hx">#AAAAAA</div></div>
+        <div class="slot on"><div class="sw" style="background:#FFFFFF"></div><div class="nm">BG<small>内容背景</small></div><div class="hx">#FFFFFF</div></div>
+        <div class="slot"><div class="sw" style="background:#000000"></div><div class="nm">FT<small>文字</small></div><div class="hx">#000000</div></div>
+        <div class="slot"><div class="sw" style="background:#CCCCCC"></div><div class="nm">HI<small>选中行 / 按钮框</small></div><div class="hx">#CCCCCC</div></div>
+        <div class="slot"><div class="sw" style="background:#9999BB"></div><div class="nm">hi_blend<small>选择条叠加（50%）</small></div><div class="hx">#9999BB</div></div>
+        <div class="slot"><div class="sw" style="background:#C08888"></div><div class="nm">SH<small>阴影 / 禁用</small></div><div class="hx">#C08888</div></div>
+        <div class="hr" style="margin:10px 0"></div>
+        <div class="empty">这六个值就是 <span class="mono" style="color:var(--text)">menu.c:213-228</span> 里 <span class="mono" style="color:var(--text)">themes[]</span> 的全部内容。没有第 7 个，也没有按界面分组。</div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="stagebar">
+        <div class="crumb"><b>文件浏览</b><span class="sep">/</span>White 预设</div>
+        <div class="dims">240 × 160 · 3×</div>
+        <div class="spacer"></div>
+        <div class="toggle on"><span class="tbox"></span>真实图标</div>
+        <div class="toggle on"><span class="tbox"></span>15-bit 取整</div>
+      </div>
+
+      <div class="canvaswrap">
+        <div class="gridbg"></div>
+        <div class="device">
+          <div class="bezel">
+            <div class="imgwrap"><img src="../preview/2browser.png" alt="firmware preview"></div>
+          </div>
+          <div style="text-align:center;margin-top:14px;font:9.5px/1 var(--mono);color:var(--dim)">
+            预览由固件真实布局绘制：16px 顶栏 · 8 行 × 16px · 16px 路径栏 · 图标取自 res/icons.png
+          </div>
+        </div>
+      </div>
+
+      <div class="film">
+        <div class="thumbs">
+          <div class="thumb on"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">文件浏览</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr" style="width:55%"></div></div></div><div class="cap">界面设置</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:40%"></div><div class="mr"></div><div class="mr" style="width:60%"></div></div></div><div class="cap">设置</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:70%"></div><div class="mr" style="width:45%"></div></div></div><div class="cap">工具</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:30%;margin:4px auto"></div></div></div><div class="cap">关于</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:50%"></div><div class="mr"></div></div></div><div class="cap">载入弹窗</div></div>
+        </div>
+        <div style="margin-left:auto;font:9.5px/1 var(--mono);color:var(--dim)">只预览已存在的界面，不虚构页面</div>
+      </div>
+    </section>
+
+    <aside class="insp" style="border-left:1px solid var(--line)">
+      <div class="phead"><div class="t">导出</div><div style="font-size:10px;color:var(--dim)">UTF-8 · LF</div></div>
+      <div class="ibody">
+        <div class="iblock">
+          <div class="ilabel">/.superfw/theme.txt</div>
+          <div class="code"><b>fg</b>=AAAAAA<br><b>bg</b>=FFFFFF<br><b>ft</b>=000000<br><b>hi</b>=CCCCCC<br><b>hib</b>=9999BB<br><b>sh</b>=C08888</div>
+        </div>
+        <div class="iblock">
+          <div class="ilabel">怎么用</div>
+          <div class="steps">
+            <b>1.</b> 复制到 SD 卡 <span class="mono" style="color:var(--text)">/.superfw/theme.txt</span><br>
+            <b>2.</b> 重启 GBA<br>
+            <b>3.</b> 界面设置 → Theme color → 选第 7 项 <b>Custom</b>
+          </div>
+        </div>
+        <div class="note2">
+          <b>需要固件配合：</b>当前固件只认 <span class="mono">themes[]</span> 常量，不读这个文件。加一个约 40 行的读取函数，把 6 个值写进同一个调色板槽位即可。
+        </div>
+        <div class="iblock">
+          <div class="ilabel">为什么只有 6 个</div>
+          <div style="font-size:10.5px;line-height:1.65;color:var(--muted)">固件里能换的只有这 6 个调色板槽。布局、行高、图标位置都不读配置，改不了。</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span class="ok">● 6 个值已修改</span>
+    <span>12 字节 · 无外部依赖</span>
+    <div class="r"><span>#AAAAAA</span><span>#FFFFFF</span><span>#000000</span><span>#CCCCCC</span></div>
+  </footer>
+</div>
+</body></html>
