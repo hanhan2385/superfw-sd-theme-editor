@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>02 Palette Lab</title><link rel="stylesheet" href="base.css">
+<style>
+  .lab{
+    width:806px;background:var(--panel);border:1px solid var(--line-2);border-radius:4px;
+    box-shadow:0 40px 80px -30px #000;display:flex;flex-direction:column;
+  }
+  .lab-h{height:46px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
+  .lab-h .t{font-size:12.5px;font-weight:600}
+  .lab-h .s{font:10px/1 var(--mono);color:var(--dim)}
+  .lab-b{padding:18px 16px 14px;display:grid;grid-template-columns:214px 1fr;gap:20px}
+  .wheel{
+    width:180px;height:180px;border-radius:50%;position:relative;margin:2px auto 0;
+    background:conic-gradient(#ff5c5c,#ffd45c,#8dff5c,#5cffd4,#5c9dff,#b45cff,#ff5cc8,#ff5c5c);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
+  }
+  .wheel::after{content:"";position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,rgba(255,255,255,0) 58%,rgba(0,0,0,.55) 100%);opacity:.55}
+  .wheel .mk{position:absolute;width:14px;height:14px;border-radius:50%;background:#6FF2C0;border:2px solid #0B0B09;box-shadow:0 0 0 1px #6FF2C0}
+  .hexrow{display:flex;gap:8px;margin-top:16px;align-items:center}
+  .hexrow .inp{flex:1;height:30px;border:1px solid var(--line-2);border-radius:3px;display:flex;align-items:center;padding:0 9px;font:600 12px/1 var(--mono)}
+  .swatch-sm{width:28px;height:30px;border-radius:3px;background:#6FF2C0;border:1px solid rgba(255,255,255,.2)}
+  .mini-btn{height:26px;border:1px solid var(--line-2);border-radius:3px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:10.5px;color:var(--muted)}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+
+  .rows{display:flex;flex-direction:column}
+  .rhead,.rrow{display:grid;grid-template-columns:78px 1fr 62px 58px 36px;align-items:center;gap:10px}
+  .rhead{font:9px/1 var(--mono);letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:0 0 7px;border-bottom:1px solid var(--line)}
+  .rrow{height:30px;border-bottom:1px solid rgba(236,232,222,.045);font-size:11px}
+  .rrow .nm{color:var(--text)}
+  .rrow .bar{height:14px;border-radius:1px;border:1px solid rgba(255,255,255,.1)}
+  .rrow .hx{font:10px/1 var(--mono);color:var(--muted)}
+  .rrow .d{font:10px/1 var(--mono);color:var(--muted);text-align:right}
+  .rrow .d.good{color:var(--ok)}
+  .rrow.lock .nm::after{content:"锁";font-size:8px;color:var(--dim);border:1px solid var(--line-2);border-radius:2px;padding:1px 3px;margin-left:6px;vertical-align:1px}
+
+  .props{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 16px 16px}
+  .prop{border:1px solid var(--line);border-radius:3px;background:var(--panel-2);padding:9px;display:flex;gap:9px;align-items:center}
+  .prop.on{border-color:rgba(217,255,87,.45);background:rgba(217,255,87,.05)}
+  .prop .pv{width:74px;height:49px;border-radius:1px;overflow:hidden;position:relative;flex:none;border:1px solid #000}
+  .prop .nm{font-size:11px;font-weight:600}
+  .prop .ds{font-size:9.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+  .prop .use{font-size:9.5px;color:var(--accent);margin-top:5px}
+  .lab-f{height:38px;border-top:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 16px;font:10px/1 var(--mono);color:var(--dim)}
+  .pill{display:inline-flex;align-items:center;gap:5px;font:10px/1 var(--mono);padding:4px 7px;border-radius:2px;border:1px solid var(--line-2);color:var(--muted)}
+  .pill.ok{color:var(--ok);border-color:rgba(127,227,168,.25)}
+  .rule{display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:3px;border:1px solid transparent}
+  .rule.on{background:var(--panel-2);border-color:var(--line)}
+  .rule .tx{font-size:11.5px}
+  .rule .tx small{display:block;font-size:9.5px;color:var(--dim);margin-top:2px}
+  .rule .sw{margin-left:auto;width:24px;height:13px;border-radius:7px;background:var(--panel-3);border:1px solid var(--line-2);position:relative;flex:none}
+  .rule .sw::after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:var(--dim);top:1px;left:1px}
+  .rule.on .sw{background:var(--accent-dim);border-color:rgba(217,255,87,.4)}
+  .rule.on .sw::after{background:var(--accent);left:12px}
+  .hist{font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:8px;padding:3px 2px}
+  .hist .c{width:12px;height:12px;border-radius:2px;border:1px solid rgba(255,255,255,.2)}
+  .hist .tm{margin-left:auto;font:9px/1 var(--mono);color:var(--dim)}
+</style>
+</head><body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand"><div class="mark">S</div><div><div class="word">SUPERFW</div><div class="sub">Theme Studio</div></div></div>
+    <div class="divider"></div>
+    <div class="doc"><span class="name">Aurora</span><span class="draft">草稿 03</span></div>
+    <div class="chip"><span class="dot" style="color:var(--ok)"></span><b>SuperCard SD</b> · FW 1.6.2 <span style="color:var(--dim)">▾</span></div>
+    <div class="spacer"></div>
+    <div class="chip">未应用生成结果</div>
+    <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-3"/></svg></div>
+    <div class="iconbtn" style="opacity:.35"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 14 5-5-5-5"/><path d="M20 9h-9a7 7 0 0 0 0 14h3"/></svg></div>
+    <button class="btn ghost">取消</button>
+    <button class="btn primary">应用到 7 个角色</button>
+  </header>
+
+  <div class="main">
+    <nav class="rail">
+      <div class="item active">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
+        <span class="lbl">画布</span>
+      </div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">资产</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4v4.1a3.5 3.5 0 0 0 3.5 3.5h6.1"/><path d="M8.4 6h6.1a3.5 3.5 0 0 1 3.5 3.5v6.1"/></svg><span class="lbl">行为</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="lbl">发布</span></div>
+      <div class="grow"></div>
+      <div class="item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3"/><path d="M12 17h.01"/></svg></div>
+    </nav>
+
+    <aside class="panel">
+      <div class="phead"><div class="t">派生规则</div><div style="font-size:10px;color:var(--dim)">4 条</div></div>
+      <div class="pbody">
+        <div class="sect">
+          <div class="rule on"><div class="tx">共享色相<small>7 个角色锁定在 166° ±12°</small></div><div class="sw"></div></div>
+          <div class="rule on"><div class="tx">中性面去饱和<small>Surface / Shadow 饱和度 ≤ 8%</small></div><div class="sw"></div></div>
+          <div class="rule on"><div class="tx">对比度下限<small>正文 4.5:1 · 图标 3:1</small></div><div class="sw"></div></div>
+          <div class="rule"><div class="tx">限制到 16 色<small>输出前吸附到调色板槽位</small></div><div class="sw"></div></div>
+        </div>
+        <div class="hr"></div>
+        <div class="sect">
+          <div class="sect-h"><div class="t">锁定角色</div><div class="a">不参与推导</div></div>
+          <div class="role"><div class="sw" style="background:#E6F5F7"></div><div class="nm">Ink<small>#E6F5F7 · 0x02</small></div><div class="meta">锁</div></div>
+          <div class="role"><div class="sw" style="background:#0E1A21"></div><div class="nm">Surface<small>#0E1A21 · 0x00</small></div><div class="meta">锁</div></div>
+        </div>
+        <div class="hr"></div>
+        <div class="sect">
+          <div class="sect-h"><div class="t">最近种子</div><div class="a">清空</div></div>
+          <div class="hist"><span class="c" style="background:#6FF2C0"></span>#6FF2C0<span class="tm">12:04</span></div>
+          <div class="hist"><span class="c" style="background:#F2A26F"></span>#F2A26F<span class="tm">11:58</span></div>
+          <div class="hist"><span class="c" style="background:#7FA8F2"></span>#7FA8F2<span class="tm">11:41</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="stagebar">
+        <div class="crumb"><b>配色实验台</b><span class="sep">/</span>种子派生</div>
+        <div class="dims">OKLCH → BGR555</div>
+        <div class="spacer"></div>
+        <div class="chip" style="height:24px">按 <span class="mono" style="color:var(--text)">Ctrl G</span> 重新生成</div>
+      </div>
+
+      <div class="canvaswrap">
+        <div class="gridbg"></div>
+
+        <div class="lab">
+          <div class="lab-h">
+            <div class="t">从 1 个种子生成整套主题</div>
+            <div class="s">对比目标 4.5:1 · 色相带 ±12°</div>
+            <div class="spacer"></div>
+            <div class="pill ok"><span class="dot"></span>7 / 7 通过约束</div>
+          </div>
+
+          <div class="lab-b">
+            <div>
+              <div class="wheel"><span class="mk" style="left:104px;top:118px"></span></div>
+              <div class="hexrow"><div class="swatch-sm"></div><div class="inp">#6FF2C0</div></div>
+              <div class="pair">
+                <div class="mini-btn">屏幕取色</div>
+                <div class="mini-btn">从图片</div>
+              </div>
+              <div style="margin-top:14px;font:9.5px/1.7 var(--mono);color:var(--dim)">
+                H 166° · S 78% · L 88%<br>
+                最近屏幕：文件浏览 / 选中行
+              </div>
+            </div>
+
+            <div class="rows">
+              <div class="rhead"><span>角色</span><span>色值</span><span>HEX</span><span>BGR555</span><span>ΔE</span></div>
+              <div class="rrow"><span class="nm">Surface</span><div class="bar" style="background:#0E1A21"></div><span class="hx">0E1A21</span><span class="hx">1061</span><span class="d good">0.4</span></div>
+              <div class="rrow"><span class="nm">Surface Alt</span><div class="bar" style="background:#16272F"></div><span class="hx">16272F</span><span class="hx">1482</span><span class="d good">0.3</span></div>
+              <div class="rrow lock"><span class="nm">Ink</span><div class="bar" style="background:#E6F5F7"></div><span class="hx">E6F5F7</span><span class="hx">7BBB</span><span class="d">0.2</span></div>
+              <div class="rrow"><span class="nm">Ink Muted</span><div class="bar" style="background:#8FB3BB"></div><span class="hx">8FB3BB</span><span class="hx">5AB1</span><span class="d good">0.5</span></div>
+              <div class="rrow"><span class="nm">Accent</span><div class="bar" style="background:#6FF2C0"></div><span class="hx">6FF2C0</span><span class="hx">5FAD</span><span class="d good">0.8</span></div>
+              <div class="rrow"><span class="nm">Highlight</span><div class="bar" style="background:#1E3B44"></div><span class="hx">1E3B44</span><span class="hx">20E3</span><span class="d good">0.6</span></div>
+              <div class="rrow"><span class="nm">Shadow</span><div class="bar" style="background:#0A1419"></div><span class="hx">0A1419</span><span class="hx">0C41</span><span class="d">1.9</span></div>
+            </div>
+          </div>
+
+          <div class="props">
+            <div class="prop on">
+              <div class="pv" style="background:#0E1A21">
+                <div style="position:absolute;left:0;right:0;top:0;height:7px;background:#16272F"></div>
+                <div style="position:absolute;left:0;right:0;top:16px;height:9px;background:#1E3B44"></div>
+                <div style="position:absolute;left:4px;top:18px;width:40px;height:3px;background:#6FF2C0"></div>
+              </div>
+              <div><div class="nm">A · 冷静</div><div class="ds">低饱和，长时间阅读最稳</div><div class="use">当前</div></div>
+            </div>
+            <div class="prop">
+              <div class="pv" style="background:#0B1620">
+                <div style="position:absolute;left:0;right:0;top:0;height:7px;background:#1B3442"></div>
+                <div style="position:absolute;left:0;right:0;top:16px;height:9px;background:#24505F"></div>
+                <div style="position:absolute;left:4px;top:18px;width:40px;height:3px;background:#8CFFD8"></div>
+              </div>
+              <div><div class="nm">B · 高对比</div><div class="ds">户外强光可读，ΔE 1.2</div><div class="use">预览</div></div>
+            </div>
+            <div class="prop">
+              <div class="pv" style="background:#141310">
+                <div style="position:absolute;left:0;right:0;top:0;height:7px;background:#26241C"></div>
+                <div style="position:absolute;left:0;right:0;top:16px;height:9px;background:#3A3728"></div>
+                <div style="position:absolute;left:4px;top:18px;width:40px;height:3px;background:#E8D48A"></div>
+              </div>
+              <div><div class="nm">C · 琥珀</div><div class="ds">暖色偏移，接近出厂橙</div><div class="use">预览</div></div>
+            </div>
+          </div>
+
+          <div class="lab-f">
+            <span class="pill ok"><span class="dot"></span>对比 4.6:1</span>
+            <span class="pill ok"><span class="dot"></span>槽位 14/16</span>
+            <span class="pill">色盲模拟：绿弱 · 通过</span>
+            <span style="margin-left:auto">生成 18 ms</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="film">
+        <div class="thumbs">
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:60%"></div></div></div><div class="cap">启动 Logo</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">最近游玩</div></div>
+          <div class="thumb on"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">文件浏览</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr" style="width:55%"></div></div></div><div class="cap">设置<span class="bad"></span></div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:70%"></div></div></div><div class="cap">界面</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr" style="width:45%"></div></div></div><div class="cap">工具</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:30%;margin:4px auto"></div></div></div><div class="cap">关于</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">游戏内菜单</div></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="insp">
+      <div class="itabs"><div class="itab on">生成参数</div><div class="itab">约束</div><div class="itab">历史</div></div>
+      <div class="ibody">
+        <div class="iblock">
+          <div class="ilabel">种子</div>
+          <div class="colorhead">
+            <div class="bigsw" style="background:#6FF2C0"></div>
+            <div><div style="font:9px/1 var(--mono);color:var(--dim);letter-spacing:.12em;margin-bottom:6px">SEED · 取自选中行</div>
+            <div class="chex">#6FF2C0</div><div class="csub">oklch(0.88 0.15 166°)</div></div>
+          </div>
+        </div>
+        <div class="iblock">
+          <div class="ilabel">推导参数</div>
+          <div class="slider"><span class="k">色相偏移</span><div class="track"><i style="width:40%"></i><b style="left:40%"></b></div><span class="v">+12°</span></div>
+          <div class="slider"><span class="k">饱和压缩</span><div class="track"><i style="width:80%"></i><b style="left:80%"></b></div><span class="v">80%</span></div>
+          <div class="slider"><span class="k">对比目标</span><div class="track"><i style="width:56%"></i><b style="left:56%"></b></div><span class="v">4.5</span></div>
+          <div class="slider"><span class="k">明度阶梯</span><div class="track"><i style="width:50%"></i><b style="left:50%"></b></div><span class="v">4 档</span></div>
+        </div>
+        <div class="iblock">
+          <div class="ilabel">派生顺序</div>
+          <div style="font-size:10.5px;line-height:1.6;color:var(--muted)">
+            Seed → Accent → Highlight → Surface Alt → Surface → Ink Muted → Shadow
+          </div>
+        </div>
+        <div class="note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none;margin-top:1px"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <div><b>Shadow 量化 ΔE 1.9</b><br>#0A1419 → #0842 偏差偏大，建议改 <span style="color:var(--warn);text-decoration:underline">#071318</span>。</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span class="ok">● 沙盒模式 · 未写入文档</span>
+    <span>生成 7 个角色 · 用时 18 ms</span>
+    <div class="r"><span>调色板 14/16</span><span>ΔE max 1.9</span><span>对比 4.6:1</span></div>
+  </footer>
+</div>
+</body></html>

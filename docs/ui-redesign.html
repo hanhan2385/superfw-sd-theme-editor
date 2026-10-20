@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>SuperFW · 深水区：把界面本身变成可编排的</title>
+<style>
+  :root{
+    --paper:#F5F3EC; --ink:#16160F; --muted:#6C6A5E; --line:#DFDCD0; --line-2:#C9C5B6;
+    --olive:#3D4D00; --lime:#E3FF7C; --lime-soft:#F2FFC4;
+    --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+    --ui:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{display:grid;grid-template-columns:212px 1fr;gap:56px;max-width:1240px;margin:0 auto;padding:0 40px}
+  nav{position:sticky;top:0;align-self:start;height:100vh;padding:44px 0 30px;display:flex;flex-direction:column}
+  nav .mk{display:flex;align-items:center;gap:9px;margin-bottom:30px}
+  nav .mk i{width:24px;height:24px;border-radius:3px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font:800 12px/1 var(--mono);font-style:normal}
+  nav .mk span{font-size:11px;letter-spacing:.12em;font-weight:600}
+  nav a{display:flex;gap:9px;padding:5px 0;color:var(--muted);text-decoration:none;font-size:12.5px;line-height:1.35}
+  nav a b{font-family:var(--mono);font-size:10px;color:#BDBAAE;font-weight:400;padding-top:2px}
+  nav a:hover{color:var(--ink)}
+  nav a.on{color:var(--ink);font-weight:600}
+  nav a.on b{color:var(--olive)}
+  nav .foot{margin-top:auto;font-size:10.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
+  main{padding:44px 0 90px;min-width:0}
+
+  .eyebrow{font:10.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--olive);margin-bottom:14px}
+  h1{font-size:37px;line-height:1.18;letter-spacing:-.02em;font-weight:650;max-width:15em;text-wrap:balance}
+  h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--lime) 62%);padding:0 2px}
+  .lede{font-size:16px;color:var(--muted);max-width:46em;margin-top:16px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .meta span{font:10px/1 var(--mono);letter-spacing:.04em;border:1px solid var(--line-2);border-radius:2px;padding:6px 8px;color:var(--muted);background:#fff}
+  .meta span b{color:var(--ink);font-weight:600}
+
+  section{padding-top:54px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--line-2);padding-top:14px;margin-bottom:18px}
+  .sec-h .num{font:11px/1 var(--mono);color:var(--olive);letter-spacing:.1em}
+  .sec-h h2{font-size:22px;letter-spacing:-.01em;font-weight:650}
+  .sec-h .tag{margin-left:auto;font:10px/1 var(--mono);color:var(--muted)}
+  h3{font-size:15px;font-weight:650;margin:26px 0 8px}
+  p{color:#33332B;max-width:52em;margin:8px 0}
+  p.small{font-size:13px;color:var(--muted)}
+  .k{font-family:var(--mono);font-size:.88em;background:#EAE7DC;padding:1px 4px;border-radius:2px}
+
+  .quote{border-left:3px solid var(--ink);padding:2px 0 2px 16px;margin:14px 0 22px;font-size:16px;color:#2A2A22}
+  .quote b{background:linear-gradient(transparent 60%,var(--lime) 60%)}
+
+  .callout{background:#fff;border-left:3px solid var(--olive);padding:12px 16px;margin:16px 0;font-size:13px;color:#3E3E34}
+  .callout b{font-weight:650}
+
+  table{width:100%;border-collapse:collapse;margin:16px 0 8px;font-size:12.5px;background:#fff;border:1px solid var(--line)}
+  th{text-align:left;font:9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line-2);background:#FBFAF5;white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:#3A3A31}
+  tr:last-child td{border-bottom:0}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  .pill{display:inline-block;font:9.5px/1 var(--mono);padding:3px 5px;border-radius:2px;border:1px solid currentColor;white-space:nowrap}
+  .pill.y{color:#3F6B00;background:#EFFBD8;border-color:#C6E39A}
+  .pill.n{color:#8A4A2E;background:#FBE9E1;border-color:#E8C3B4}
+  .pill.m{color:#7A5A00;background:#FFF6D9;border-color:#EBD79A}
+
+  /* device pair grid */
+  .devgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px 22px;margin-top:20px}
+  .devcard{background:#fff;border:1px solid var(--line)}
+  .devcard img{width:100%;display:block;border-bottom:1px solid var(--line);background:#000}
+  .devcard .cap{padding:10px 12px}
+  .devcard .cap .t{font-size:12px;font-weight:650;display:flex;align-items:center;gap:7px}
+  .devcard .cap .t i{font:9px/1 var(--mono);color:var(--olive);font-style:normal;border:1px solid var(--line-2);padding:2px 4px;border-radius:2px}
+  .devcard .cap p{font-size:11.5px;color:var(--muted);margin:5px 0 0;line-height:1.6}
+
+  .wide{background:#fff;border:1px solid var(--line);margin-top:20px}
+  .wide img{width:100%;display:block;border-bottom:1px solid var(--line);background:#000}
+  .wide .cap{padding:12px 14px}
+  .wide .cap .t{font-size:12.5px;font-weight:650}
+  .wide .cap p{font-size:12px;color:var(--muted);margin:4px 0 0}
+
+  /* before after */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  .bac{background:#fff;border:1px solid var(--line);padding:14px}
+  .bac .lbl{font:9.5px/1 var(--mono);letter-spacing:.1em;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between}
+  .oldtop{display:flex;gap:2px}
+  .oldtop i{flex:1;height:18px;border:1px solid #E4E1D5;background:#F2EFE5;font:7.5px/16px var(--mono);color:#8B8879;text-align:center;font-style:normal}
+  .oldrow{height:17px;border-bottom:1px solid #F0EDE3;display:flex;align-items:center;font:7.5px/1 var(--mono);color:#9A978A;padding:0 3px}
+  .newrail{display:grid;grid-template-columns:34px 1fr;gap:5px;height:112px}
+  .newrail .r{border:1px solid #E4E1D5;background:#F7F5EE;display:flex;flex-direction:column;padding:3px;gap:3px}
+  .newrail .r i{height:16px;background:#EAE7DC;font:6.5px/16px var(--mono);text-align:center;color:#8B8879;font-style:normal}
+  .newrail .r i.on{background:var(--ink);color:var(--lime)}
+  .newrail .c{border:1px solid #E4E1D5;padding:4px;display:flex;flex-direction:column;gap:4px}
+  .newrail .c .h{height:9px;background:#EDEADF}
+  .newrail .c .row{height:14px;background:#F0EDE3;display:flex;align-items:center;padding:0 3px;font:6.5px/1 var(--mono);color:#8B8879}
+  .newrail .c .row.on{background:var(--lime-soft);border-left:2px solid var(--olive)}
+  .bac .note{font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.6}
+
+  .layers{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:16px}
+  .layer{background:#fff;padding:15px 16px}
+  .layer .n{font:9px/1 var(--mono);color:var(--olive);letter-spacing:.1em}
+  .layer b{display:block;margin:7px 0 5px;font-size:12.5px}
+  .layer p{font-size:11.5px;color:var(--muted);margin:0;line-height:1.6}
+
+  pre{background:#16160F;color:#E8E5D8;padding:14px 16px;border-radius:3px;overflow:auto;font:11.5px/1.7 var(--mono);margin:14px 0}
+  pre .c{color:#7F8B6A}
+  pre .a{color:#C7F464}
+
+  .risk{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .rc{background:#fff;border:1px solid var(--line);padding:13px 15px}
+  .rc b{font-size:12px}
+  .rc p{font-size:11.5px;color:var(--muted);margin:4px 0 0;line-height:1.6}
+
+  .confirm{background:var(--ink);color:#EDEAE0;padding:26px 28px;margin-top:22px}
+  .confirm h3{color:#fff;margin:0 0 10px;font-size:16px}
+  .confirm p{color:#B9B6A8;font-size:13px;max-width:60em}
+  .confirm ol{margin:14px 0 0;padding-left:18px;color:#DAD7CB;font-size:13px;line-height:1.9}
+  .confirm b{color:var(--lime);font-weight:600}
+  .confirm .k{background:#2C2C23;color:#E7E4D6}
+  .confirm .foot{margin-top:16px;font:10px/1.6 var(--mono);color:#7E7C70;border-top:1px solid #33332A;padding-top:12px}
+
+  footer{margin-top:56px;border-top:1px solid var(--line-2);padding-top:16px;font:10.5px/1.8 var(--mono);color:var(--muted)}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;gap:0;padding:0 20px}
+    nav{display:none}
+    h1{font-size:29px}
+    .devgrid,.ba,.layers,.risk{grid-template-columns:1fr}
+  }
+</style></head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="mk"><i>S</i><span>SUPERFW · DEEP</span></div>
+    <a href="#own" class="on"><b>00</b>上一版的局限</a>
+    <a href="#budget"><b>01</b>GBA 的硬账</a>
+    <a href="#ia"><b>02</b>新导航模型</a>
+    <a href="#screens"><b>03</b>五张设备稿</a>
+    <a href="#package"><b>04</b>主题包与运行时</a>
+    <a href="#studio"><b>05</b>工作台怎么改</a>
+    <a href="#compat"><b>06</b>兼容与迁移</a>
+    <a href="#cost"><b>07</b>代价与风险</a>
+    <a href="#ask"><b>08</b>要你定的</a>
+    <div class="foot">深水区方案 v0.1<br>2026-10-17<br>基于 superfw@1c9ff09</div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Deep redesign · 2nd pass</div>
+    <h1>上一版只改了皮。<em>这一版改骨架。</em></h1>
+    <p class="lede">如果主题仍然只是 <span class="k">themes[6][6]</span> 那张颜色表，那这个工具的天花板就是"换配色 + 换图标"。要让主题真的能改变操作逻辑与布局，必须先把固件里<b>写死的坐标</b>变成<b>可编排的数据</b>——然后再谈编辑器。</p>
+
+    <div style="border:1px solid #E0C9A6;background:#FBF3E4;padding:10px 14px;margin:18px 0 0;font-size:12.5px;color:#6B4A1E;line-height:1.6">
+      <b>说明：</b>本文是概念稿。文中出现的版本号（1.4/1.5/1.6）、<span style="font-family:Consolas,monospace">theme.bin</span>、调色板槽位预算与兼容矩阵均为设想，固件中并不存在。事实以 <a href="grounded.html" style="color:#6B4A1E">《先画出它真实的样子》</a> 为准。
+    </div>
+    <section id="own">
+      <div class="sec-h"><div class="num">00</div><h2>先把上一版的问题说清楚</h2><div class="tag">自我修正</div></div>
+      <div class="quote">"你这样只能去修改基础的东西。"<br><b>对，而且原因是结构性的，不是做得不够多。</b></div>
+
+      <p>我上一版设计的是<b>工具</b>的新交互，固件那侧一点没动：菜单还是 7 个横排标签、16px 行高、A 进 B 出、弹窗盖在上面。所谓"主题"在代码里就是六个 <span class="k">uint16_t</span>，所以无论编辑器做得多花，产物都只能换颜色和图标。</p>
+
+      <table>
+        <tr><th>层面</th><th>现在</th><th>能否被"主题"改变</th></tr>
+        <tr><td>颜色</td><td class="mono">themes[6][6]</td><td><span class="pill y">可以</span></td></tr>
+        <tr><td>图标 / 字库</td><td class="mono">icons.h / fonts.pack</td><td><span class="pill y">可以（编译期）</span></td></tr>
+        <tr><td>行高 / 栏宽 / 留白</td><td class="mono">render_browser() 里的常量</td><td><span class="pill n">不能</span></td></tr>
+        <tr><td>导航结构（标签顺序 / 层级）</td><td class="mono">menu_tab 枚举 + L/R</td><td><span class="pill n">不能</span></td></tr>
+        <tr><td>交互（弹窗 vs 页面 / 快捷键）</td><td class="mono">popup_windows[] 分发表</td><td><span class="pill n">不能</span></td></tr>
+        <tr><td>信息密度（每行显示什么）</td><td class="mono">draw_text_ovf 调用点</td><td><span class="pill n">不能</span></td></tr>
+      </table>
+
+      <p>下面四行就是"只能改基础"的根因：布局不是一个对象，而是散落在 <span class="k">menu.c</span> 三千行里的立即数。<b>要改布局，先得让布局成为一个可以被读写的对象。</b></p>
+
+      <div class="layers">
+        <div class="layer"><div class="n">LAYER 0</div><b>像素与词法</b><p>240×160、8×16 字形、16×16 图标、BGR555。硬件决定，不可变。</p></div>
+        <div class="layer"><div class="n">LAYER 1</div><b>布局与组件</b><p>Rail / List / Row / Hero / Sheet 的位置、尺寸、密度、绑定。这一层现在写死在 C 里。</p></div>
+        <div class="layer"><div class="n">LAYER 2</div><b>导航与流程</b><p>去哪、怎么回、START 做什么。现在是枚举 + switch，也应该变成数据。</p></div>
+      </div>
+      <div class="callout"><b>这一版要做的，是把 LAYER 1 和 LAYER 2 抽出来：</b>固件保留一个约 3KB 的布局运行时，主题包携带布局描述；工作台则从"调色板编辑器"升级为"界面编排器"。</div>
+    </section>
+
+    <section id="budget">
+      <div class="sec-h"><div class="num">01</div><h2>先算账：GBA 还剩多少余量</h2><div class="tag">不做超纲的设计</div></div>
+      <p>在 16.78 MHz、96KB VRAM、256KB EWRAM 的机器上谈"可编排 UI"，必须先证明放得下。按现有代码的分配方式粗算：</p>
+      <table>
+        <tr><th>资源</th><th>现状占用</th><th>新增</th><th>结论</th></tr>
+        <tr><td>VRAM</td><td class="mono">Mode4 双缓冲 76.8 KB / 96 KB</td><td class="mono">0（复用同一帧缓冲）</td><td><span class="pill y">无压力</span></td></tr>
+        <tr><td>ROM</td><td class="mono">256 / 496 / 512 KB 三档</td><td class="mono">+2.5 ~ 3.5 KB 代码</td><td><span class="pill y">可接受</span></td></tr>
+        <tr><td>RAM</td><td class="mono">IWRAM 32 KB / EWRAM 256 KB</td><td class="mono">+0.6 KB 运行时状态</td><td><span class="pill y">可接受</span></td></tr>
+        <tr><td>描述数据</td><td class="mono">—</td><td class="mono">1.2 KB / 主题（放 ROM 或 SD）</td><td><span class="pill m">Lite 版需裁剪</span></td></tr>
+        <tr><td>CPU</td><td class="mono">整屏 38.4 KB 重绘已是每帧成本</td><td class="mono">布局只在切屏时算，~2–3k cycles</td><td><span class="pill y">不进热路径</span></td></tr>
+      </table>
+      <p class="small">估算口径：布局解释器按 6 个原语（Rail / List / Grid / Hero / Sheet / Hint）、每屏 ~20 个节点、每节点 ~24 字节描述计算；实际值需在 P1 阶段用 <span class="k">--print-memory-usage</span> 校准。</p>
+      <div class="callout"><b>关键约束：</b>运行时只做"摆放"，不做"绘制"。文字仍走现有 <span class="k">draw_text_ovf</span>，图标仍走 OBJ 调色板——这样新增代码量最小，也不会把 60fps 拖垮。</div>
+    </section>
+
+    <section id="ia">
+      <div class="sec-h"><div class="num">02</div><h2>新导航模型：竖栏 + 页面栈 + 命令面板</h2><div class="tag">换掉 7 标签横条</div></div>
+
+      <div class="ba">
+        <div class="bac">
+          <div class="lbl"><span>BEFORE · 7 个平级标签</span><span>16px 顶部条</span></div>
+          <div class="oldtop"><i>最近</i><i>文件</i><i>NOR</i><i>设置</i><i>界面</i><i>工具</i><i>关于</i></div>
+          <div class="oldrow">..</div><div class="oldrow">GAMES</div><div class="oldrow">HOMEBREW</div><div class="oldrow">SAVES</div><div class="oldrow">MOTHER.3.GBA</div><div class="oldrow">METROID.ZERO.MISSION.GBA</div>
+          <div class="note">7 个入口平铺，靠 L/R 循环；每行 16px，只能放一个文件名；进入游戏要先过弹窗。</div>
+        </div>
+        <div class="bac">
+          <div class="lbl"><span>AFTER · 5 个场所 + 页面栈</span><span>40px 竖栏</span></div>
+          <div class="newrail">
+            <div class="r"><i class="on">首页</i><i>游戏</i><i>工具</i><i>设置</i><i>系统</i></div>
+            <div class="c">
+              <div class="h"></div>
+              <div class="row">文件夹 · 2</div>
+              <div class="row on">HOMEBREW　12</div>
+              <div class="row">SAVES　88</div>
+              <div class="row">游戏 · 39</div>
+              <div class="row">MOTHER.3.GBA　32M</div>
+            </div>
+          </div>
+          <div class="note">5 个场所常驻可见，方向键二维移动；列表 24px 行高，名称 + 元信息同屏；详情是页面，不是弹窗。</div>
+        </div>
+      </div>
+
+      <h3>三条规则</h3>
+      <p><b>1. 场所（Place）与层级（Stack）分离。</b>竖栏切换"我在哪一类事"，B 键只在页面栈里回退。以前 L/R 既翻标签又翻页，用户永远不知道会翻到哪；现在两个维度各归其位。</p>
+      <p><b>2. 弹窗降级为两种。</b>需要决策的（删除确认）用确认页；不需要决策的（排序/视图/主题）用 START 命令面板。消灭"弹窗盖弹窗"的栈。</p>
+      <p><b>3. 底部提示条随焦点变。</b>"A 打开 · B 返回 · START 操作" 只在列表页出现；进详情后变成 "A 开始 · SELECT 选项"。按键教学不再依赖说明书。</p>
+
+      <table>
+        <tr><th>操作</th><th>旧</th><th>新</th></tr>
+        <tr><td>切换分区</td><td>L / R 循环 7 个标签</td><td>方向键在 5 个场所间二维移动</td></tr>
+        <tr><td>返回</td><td>B：退弹窗 / 退目录 / 退标签（多重语义）</td><td>B：只退页面栈；竖栏不参与</td></tr>
+        <tr><td>更多操作</td><td>SELECT 打开子菜单弹窗</td><td>START 唤出命令面板（6 个大按钮）</td></tr>
+        <tr><td>游戏详情</td><td>弹窗（载入/存档/补丁三个 tab）</td><td>整页详情（封面 + 元信息 + 主操作）</td></tr>
+        <tr><td>设置</td><td>一条长列表，5 屏</td><td>左分类 + 右选项，一屏看到 6 项</td></tr>
+      </table>
+    </section>
+
+    <section id="screens">
+      <div class="sec-h"><div class="num">03</div><h2>五张设备稿</h2><div class="tag">240×160 · 4× 放大</div></div>
+      <p class="small">按真实像素网格绘制：40px 竖栏、24px 行高、8px 主字号、12px 提示条。可直接作为实现时的像素标注。</p>
+
+      <div class="devgrid">
+        <div class="devcard">
+          <img src="../design/preview/10-home.png" alt="首页">
+          <div class="cap"><div class="t"><i>01</i>首页 · 继续游玩</div><p>把"最近玩过"提到首屏：一张大卡 + 三条最近记录 + 存储条。开机后 A 一次就能继续上次的游戏，不用再穿三层目录。</p></div>
+        </div>
+        <div class="devcard">
+          <img src="../design/preview/11-library.png" alt="游戏库">
+          <div class="cap"><div class="t"><i>02</i>游戏库 · 竖栏 + 分组列表</div><p>24px 行高同时容纳名称与元信息（游戏码、存档类型）；分组标题把文件夹与游戏分开；右缘滚动条替代 "12/41" 文本。</p></div>
+        </div>
+        <div class="devcard">
+          <img src="../design/preview/12-detail.png" alt="详情">
+          <div class="cap"><div class="t"><i>03</i>游戏详情 · 从弹窗变页面</div><p>封面带 + 三条元信息 + 单一主操作。补丁状态、存档类型、直存开关一眼可见——这些信息以前分散在三个弹窗里。</p></div>
+        </div>
+        <div class="devcard">
+          <img src="../design/preview/13-sheet.png" alt="命令面板">
+          <div class="cap"><div class="t"><i>04</i>命令面板 · START</div><p>排序、视图、主题、存档、重启收进一个 2×3 面板。常用操作从"翻到设置页找"变成"随手按 START"。</p></div>
+        </div>
+        <div class="devcard">
+          <img src="../design/preview/14-settings.png" alt="设置">
+          <div class="cap"><div class="t"><i>05</i>设置 · 分类 + 选项</div><p>左侧 5 个分类常驻，右侧 6 行可见；开关与数值内联，左右键直接改。取消"改完再点保存"的两步操作。</p></div>
+        </div>
+        <div class="devcard" style="display:flex;align-items:center;justify-content:center;background:#FBFAF5">
+          <div style="padding:18px">
+            <div style="font:10px/1 var(--mono);color:var(--olive);letter-spacing:.1em">同一套原语</div>
+            <p style="font-size:12.5px;color:#4A4A40;margin-top:8px">五个屏幕全部由 6 个原语拼成：<b>Rail / List / Hero / Sheet / Meta / Hint</b>。换模板只换原语的组合与度量，不换渲染代码——这就是"可编排"的含义。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="package">
+      <div class="sec-h"><div class="num">04</div><h2>主题包：从颜色表到界面描述</h2><div class="tag">TLV · 前向兼容</div></div>
+      <p>新格式的关键不是"多存几个字段"，而是<b>把布局描述成数据</b>。六个模板覆盖固件全部界面；主题只能在模板约束内调度量与绑定，避免做出不可用的界面。</p>
+
+      <pre><span class="c">// theme.bin（TLV，未知 type 跳过）</span>
+<span class="a">HEAD</span>  magic "SFTH" · ver 2 · target_fw 0x0106 · doc_hash
+<span class="a">TOKENS</span>
+  color.surface    #0E1A21
+  color.accent     #6FF2C0
+  metric.row_h     24        <span class="c">// 20 / 24 / 28</span>
+  metric.rail_w    40        <span class="c">// 0 / 32 / 40</span>
+  style.divider    1px
+<span class="a">LAYOUT</span>
+  screen "library" → template T1
+    block Rail   { w: metric.rail_w, items: places }
+    block List   { row_h: metric.row_h, meta: true, group: true }
+    block Hint   { h: 12, dynamic: true }
+<span class="a">ASSETS</span>
+  icon[] · font_subset[] · logo
+<span class="a">FALLBACK</span>  <span class="c">// 老固件读到这里就停</span></pre>
+
+      <table>
+        <tr><th>模板</th><th>用于</th><th>可调</th></tr>
+        <tr><td class="mono">T1 竖栏 + 列表</td><td>游戏库 / 工具 / 系统</td><td>行高 20/24/28、元信息开关、分组、选中样式</td></tr>
+        <tr><td class="mono">T2 竖栏 + 网格</td><td>封面书架（新视图）</td><td>列数 2/3、瓦片尺寸、标题行数</td></tr>
+        <tr><td class="mono">T3 全屏详情</td><td>游戏详情 / 关于</td><td>封面高度、元信息条数、主操作文案</td></tr>
+        <tr><td class="mono">T4 底部面板</td><td>命令面板 / 确认</td><td>列数、瓦片高度、是否模态</td></tr>
+        <tr><td class="mono">T5 分类 + 选项</td><td>设置 / 界面</td><td>分类宽度、每屏行数、值控件类型</td></tr>
+        <tr><td class="mono">T6 仪表</td><td>首页</td><td>Hero 高度、最近条数、是否显示存储</td></tr>
+      </table>
+
+      <p class="small">布局描述只允许在这六个模板内组合，不允许任意坐标。这是刻意的：240×160 上一个自由画布布局器必然产出不可用的界面，而"受约束的模板 + 可调度量"能保证任何主题都还能用。</p>
+    </section>
+
+    <section id="studio">
+      <div class="sec-h"><div class="num">05</div><h2>工作台随之升级：从调色板到结构树</h2><div class="tag">布局模式</div></div>
+      <p>工具这边不再只是"选颜色"。画布模式里新增 <b>颜色 / 布局 / 动效</b> 三个子页：布局页给出结构树、固定/弹性标注、组件度量与模板切换，改动实时反映到中间的设备画布。</p>
+
+      <div class="wide">
+        <img src="../design/preview/08-layout.png" alt="布局模式">
+        <div class="cap"><div class="t">布局模式 · 结构树 + 度量检查器</div><p>左侧结构树把"固定的 Rail 40 / Crumb 12 / HintBar 12"与"弹性的 List"分开；右侧改行高 24→20，画布与"可见行 5/41"同时变化，并给出一句人话提醒（元信息会挤）。</p></div>
+      </div>
+
+      <p><b>为什么不是自由拖拽：</b>设备只有 240×160，一个像素的错位都会让 8px 字形挤在一起。工作台提供的是<b>带约束的编排</b>——换模板、调度量、绑数据源、开关内容块；越界的组合会被禁止并说明原因。这比"看起来自由、导出后崩"更负责任。</p>
+    </section>
+
+    <section id="compat">
+      <div class="sec-h"><div class="num">06</div><h2>兼容与迁移</h2><div class="tag">老固件不能假装支持新格式</div></div>
+      <table>
+        <tr><th>版本</th><th>能否读 v2 主题包</th><th>实际行为</th></tr>
+        <tr><td class="mono">1.4.x</td><td><span class="pill n">否</span></td><td>只能用工具产出的 C 数组重新编译；布局层不可用。</td></tr>
+        <tr><td class="mono">1.5.x</td><td><span class="pill n">否</span></td><td>同上；颜色可注入，布局写死。</td></tr>
+        <tr><td class="mono">1.6.x</td><td><span class="pill m">仅颜色段</span></td><td>读到 LAYOUT 段直接跳过 → 得到"旧布局 + 新配色"，并在启动时提示降级。</td></tr>
+        <tr><td class="mono">1.7（需改固件）</td><td><span class="pill y">是</span></td><td>完整布局 + 交互；未知块跳过，向后兼容 v1。</td></tr>
+      </table>
+      <p><b>迁移策略：</b>旧主题（6 色）自动映射为 v2 的 <span class="k">tokens</span> 子集，布局取默认模板 T1；导出时同时生成 v1 兼容段，保证同一份文档能落到两代固件上。</p>
+      <p><b>回滚：</b>主题包带 <span class="k">FALLBACK</span> 段指向内置主题；布局解析失败时整包回退，而不是半套界面。</p>
+    </section>
+
+    <section id="cost">
+      <div class="sec-h"><div class="num">07</div><h2>代价与风险</h2><div class="tag">说清楚再动手</div></div>
+      <div class="risk">
+        <div class="rc"><b>要改固件，不只是做网页</b><p>布局运行时、模板解释、主题包加载器都要落在 C 里，并做内存与帧率验证。这是 3–4 周的固件工作，不是前端能单方面完成的。</p></div>
+        <div class="rc"><b>Lite 版可能放不下</b><p>256KB 固件档位余量最小；若超限，Lite 只保留 T1/T3 两个模板，其余在导出时降级。</p></div>
+        <div class="rc"><b>旧主题会"看起来没变"</b><p>只有颜色段的主题在 1.6 上仍是旧布局。需要在 UI 里明确标注"此主题未包含布局"，避免用户以为没生效。</p></div>
+        <div class="rc"><b>测试面变大</b><p>模板 × 度量 × 语言 × 字号组合多，需要一套截图回归（用现有模拟器跑 240×160 帧比对）。</p></div>
+      </div>
+      <p class="small" style="margin-top:14px"><b>但仍值得做：</b>这是唯一能让"主题"从皮肤变成产品的路径。否则工作台再漂亮，产物永远只是六个数。</p>
+    </section>
+
+    <section id="ask">
+      <div class="sec-h"><div class="num">08</div><h2>要你定的</h2><div class="tag">选一条路</div></div>
+      <div class="confirm">
+        <h3>两条路线，成本差一个数量级</h3>
+        <p>现在不是"要不要做得更深"，而是"深到哪一层、由谁承担固件改动"：</p>
+        <ol>
+          <li><b>A · 只做工作台（2 周）：</b>产物是 <span class="k">theme.c</span> + 资源，用户自己编译固件。布局仍写死，但颜色/图标/字库可以做到极致。承认天花板。</li>
+          <li><b>B · 工作台 + 布局运行时（6–8 周）：</b>新增 ~3KB 运行时与模板系统，主题包能改导航与布局。需要改固件、过内存与帧率验证，Lite 版要裁剪。</li>
+          <li><b>C · 先做 B 的纵向切片（1 周）：</b>只把"游戏库"一屏改成模板驱动，验证运行时、内存与观感，再决定是否铺开到全部 8 屏。</li>
+        </ol>
+        <div class="foot">我建议 C：用一屏证明这条路走得通，再谈全面改造。你定方向，我按 P1 开始搭解析器与画布。</div>
+      </div>
+      <footer>设备稿按 240×160 像素网格绘制，4× 输出；布局运行时的内存与周期数为估算，需在 P1 用实际构建校准。</footer>
+    </section>
+  </main>
+</div>
+</body></html>

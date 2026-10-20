@@ -1,0 +1,26 @@
+name: SuperFW test
+run-name: Build and run SuperFW tests
+
+on: [push]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get install gcc lcov
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+      - name: Build and run tests
+        run: cd tests && make
+      - name: Upload coverage report
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-${{ steps.slug.outputs.sha8 }}
+          path: tests/coverage/*

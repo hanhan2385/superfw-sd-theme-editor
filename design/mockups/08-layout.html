@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>08 Layout</title><link rel="stylesheet" href="base.css">
+<style>
+  .seg{display:flex;border:1px solid var(--line-2);border-radius:3px;height:24px;overflow:hidden}
+  .seg span{padding:0 10px;display:grid;place-items:center;font-size:10.5px;color:var(--dim);border-right:1px solid var(--line)}
+  .seg span:last-child{border:0}
+  .seg span.on{background:var(--panel-3);color:var(--text)}
+  .seg span.on::after{content:"";position:absolute}
+  .tree{display:flex;flex-direction:column;gap:1px;padding:0 4px}
+  .tr{height:26px;display:flex;align-items:center;gap:6px;padding:0 6px;border-radius:2px;font-size:11px;color:var(--muted)}
+  .tr .caret{color:var(--dim);font-size:8px;width:8px;text-align:center}
+  .tr .nm{color:var(--text)}
+  .tr .tp{margin-left:auto;font:8.5px/1 var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:2px;padding:2px 4px}
+  .tr .tp.flex{color:var(--accent);border-color:rgba(217,255,87,.3)}
+  .tr.sel{background:var(--accent-dim);box-shadow:inset 2px 0 0 var(--accent)}
+  .tr.child{padding-left:22px}
+  .tr.child2{padding-left:38px}
+  .tr:hover{background:var(--panel-2)}
+  .tr .dot{width:4px;height:4px;border-radius:1px;background:var(--line-3)}
+
+  .devwrap{position:relative}
+  .shot{width:720px;height:480px;display:block;border-radius:2px;box-shadow:0 0 0 1px #000}
+  .anno{position:absolute;border:1px solid var(--accent);background:rgba(217,255,87,.06);pointer-events:none}
+  .anno::before,.anno::after{content:"";position:absolute;width:3px;height:3px;background:var(--accent)}
+  .anno::before{left:-2px;top:-2px}.anno::after{right:-2px;bottom:-2px}
+  .anno-tag{position:absolute;left:0;top:-22px;background:#0B0B09;border:1px solid var(--accent);color:var(--accent);font:9.5px/1 var(--mono);padding:4px 6px;white-space:nowrap}
+  .dim{position:absolute;color:var(--dim);font:9px/1 var(--mono);letter-spacing:.04em}
+  .vline{position:absolute;width:1px;background:rgba(217,255,87,.25)}
+  .ruler{position:absolute;left:-30px;top:0;bottom:0;width:22px;border-right:1px solid var(--line-2)}
+  .ruler i{position:absolute;right:0;width:6px;height:1px;background:var(--line-2)}
+  .ruler b{position:absolute;right:9px;font:8px/1 var(--mono);color:var(--dim);transform:translateY(-50%)}
+
+  .field{display:grid;grid-template-columns:74px 1fr;gap:8px;align-items:center;height:28px;font-size:10.5px;color:var(--muted)}
+  .field .val{font:9.5px/1 var(--mono);color:var(--text);text-align:right}
+  .seg2{display:flex;border:1px solid var(--line-2);border-radius:2px;overflow:hidden;height:22px}
+  .seg2 span{flex:1;display:grid;place-items:center;font:9px/1 var(--mono);color:var(--dim)}
+  .seg2 span.on{background:var(--accent);color:#0B0B09;font-weight:700}
+  .swatchrow{display:flex;gap:4px}
+  .swatchrow i{flex:1;height:22px;border-radius:2px;border:1px solid rgba(255,255,255,.14)}
+  .swatchrow i.on{outline:1px solid var(--accent);outline-offset:1px}
+</style></head><body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="mark">S</div><div><div class="word">SUPERFW</div><div class="sub">Theme Studio</div></div></div>
+    <div class="divider"></div>
+    <div class="doc"><span class="name">Aurora</span><span class="draft">草稿 03</span></div>
+    <div class="chip"><span class="dot" style="color:var(--ok)"></span><b>SuperCard SD</b> · FW 1.6.2 <span style="color:var(--dim)">▾</span></div>
+    <div class="spacer"></div>
+    <div class="chip ok">✓ 结构可导出 · 需 UI 运行时</div>
+    <div class="iconbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-3"/></svg></div>
+    <div class="iconbtn" style="opacity:.35"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 14 5-5-5-5"/><path d="M20 9h-9a7 7 0 0 0 0 14h3"/></svg></div>
+    <button class="btn ghost">对比</button>
+    <button class="btn primary">导出</button>
+  </header>
+
+  <div class="main">
+    <nav class="rail">
+      <div class="item active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg><span class="lbl">画布</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">资产</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4v4.1a3.5 3.5 0 0 0 3.5 3.5h6.1"/><path d="M8.4 6h6.1a3.5 3.5 0 0 1 3.5 3.5v6.1"/></svg><span class="lbl">行为</span></div>
+      <div class="item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="lbl">发布</span></div>
+      <div class="grow"></div>
+    </nav>
+
+    <aside class="panel">
+      <div class="phead"><div class="t">结构树</div><div style="font-size:10px;color:var(--dim)">文件浏览</div></div>
+      <div style="padding:6px 6px 0">
+        <div class="tree">
+          <div class="tr"><span class="caret">▾</span><span class="dot"></span><span class="nm">Screen · 首页</span><span class="tp">3</span></div>
+          <div class="tr child"><span class="caret"></span><span>Hero</span><span class="tp">固定 50</span></div>
+          <div class="tr child"><span class="caret"></span><span>Recent</span><span class="tp">弹性</span></div>
+          <div class="tr child"><span class="caret"></span><span>Meter</span><span class="tp">14</span></div>
+          <div class="tr" style="margin-top:4px"><span class="caret">▾</span><span class="dot"></span><span class="nm">Screen · 文件浏览</span><span class="tp">6</span></div>
+          <div class="tr child"><span class="caret"></span><span>Rail</span><span class="tp">固定 40</span></div>
+          <div class="tr child"><span class="caret"></span><span>Crumb</span><span class="tp">固定 12</span></div>
+          <div class="tr child"><span class="caret"></span><span>GroupHeader</span><span class="tp">自动</span></div>
+          <div class="tr child sel"><span class="caret">▾</span><span class="nm">List</span><span class="tp flex">弹性</span></div>
+          <div class="tr child2"><span class="caret"></span><span>Row · 5</span><span class="tp">24</span></div>
+          <div class="tr child2"><span class="caret"></span><span>Scrollbar</span><span class="tp">2</span></div>
+          <div class="tr child"><span class="caret"></span><span>HintBar</span><span class="tp">固定 12</span></div>
+          <div class="tr" style="margin-top:4px"><span class="caret">▸</span><span class="dot"></span><span>Screen · 详情</span><span class="tp">3</span></div>
+          <div class="tr"><span class="caret">▸</span><span class="dot"></span><span>Screen · 设置</span><span class="tp">4</span></div>
+        </div>
+      </div>
+      <div style="margin:10px 10px 0;border-top:1px solid var(--line)"></div>
+      <div class="pbody" style="gap:8px;padding-top:8px">
+        <div class="sect">
+          <div class="sect-h"><div class="t">模板</div><div class="a">6 个</div></div>
+          <div class="role sel"><div class="sw" style="background:linear-gradient(90deg,#1E3B44 34%,#16272F)"></div><div class="nm">T1 竖栏 + 列表<small>当前 · 文件浏览</small></div><div class="meta">用</div></div>
+          <div class="role"><div class="sw" style="background:linear-gradient(90deg,#1E3B44 34%,#16272F);opacity:.75"></div><div class="nm">T2 竖栏 + 网格<small>封面书架</small></div><div class="meta">换</div></div>
+          <div class="role"><div class="sw" style="background:linear-gradient(180deg,#1E3B44 45%,#16272F);opacity:.75"></div><div class="nm">T3 全屏详情<small>沉浸页 · 无栏</small></div><div class="meta">换</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="stagebar">
+        <div class="crumb"><b>文件浏览</b><span class="sep">/</span>结构</div>
+        <div class="dims">240 × 160 · 3×</div>
+        <div class="spacer"></div>
+        <div class="seg"><span>颜色</span><span class="on">布局</span><span>动效</span></div>
+        <div class="toggle on"><span class="tbox"></span>基线网格</div>
+      </div>
+
+      <div class="canvaswrap">
+        <div class="gridbg"></div>
+        <div class="devwrap" style="margin-left:30px">
+          <div class="ruler">
+            <i style="top:63px"></i><b style="top:63px">21</b>
+            <i style="top:135px"></i><b style="top:135px">24</b>
+            <i style="top:207px"></i><b style="top:207px">24</b>
+            <i style="top:279px"></i><b style="top:279px">24</b>
+            <i style="top:351px"></i><b style="top:351px">24</b>
+            <i style="top:411px"></i><b style="top:411px">24</b>
+          </div>
+          <div class="bezel" style="padding:10px">
+            <div style="position:relative;width:720px;height:480px">
+              <img class="shot" src="../preview/11-library.png" alt="library">
+              <div class="anno" style="left:138px;top:63px;width:558px;height:348px">
+                <div class="anno-tag" style="left:auto;right:0">List · 5 × 24px · 弹性</div>
+              </div>
+              <div class="vline" style="left:120px;top:63px;height:72px"></div>
+              <div class="dim" style="left:126px;top:88px">行 24</div>
+            </div>
+          </div>
+          <div class="dim" style="position:static;margin-top:8px;text-align:center">Rail 40 · Crumb 12 · HintBar 12 — 固定区不参与重排</div>
+        </div>
+      </div>
+
+      <div class="film">
+        <div class="thumbs">
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:60%"></div></div></div><div class="cap">首页</div></div>
+          <div class="thumb on"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">文件浏览</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:55%"></div><div class="mr"></div></div></div><div class="cap">详情</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:70%"></div></div></div><div class="cap">设置</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:45%"></div><div class="mr"></div></div></div><div class="cap">工具</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr" style="width:30%;margin:4px auto"></div></div></div><div class="cap">关于</div></div>
+          <div class="thumb"><div class="frame"><div class="mini"><div class="mt"></div><div class="mr"></div><div class="mr hl"></div></div></div><div class="cap">游戏内</div></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="insp">
+      <div class="itabs"><div class="itab on">组件</div><div class="itab">数据</div><div class="itab">适配</div></div>
+      <div class="ibody">
+        <div class="iblock">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="bigsw" style="width:34px;height:34px;background:linear-gradient(180deg,#1E3B44,#16272F)"></div>
+            <div><div style="font-size:12px;font-weight:600">List</div><div style="font:9.5px/1.5 var(--mono);color:var(--dim)">library · 弹性高度</div></div>
+          </div>
+        </div>
+
+        <div class="iblock">
+          <div class="ilabel">度量</div>
+          <div class="field"><span>行高</span><div style="display:flex;align-items:center;gap:8px"><div class="track" style="flex:1;height:3px;background:var(--panel-3);position:relative"><i style="position:absolute;left:0;top:0;bottom:0;width:60%;background:var(--line-3)"></i><b style="position:absolute;left:60%;top:-4px;width:11px;height:11px;border-radius:50%;background:var(--text);transform:translateX(-5px)"></b></div><span class="val">24 px</span></div></div>
+          <div class="field"><span>图标</span><div class="seg2"><span>12</span><span class="on">16</span><span>20</span></div></div>
+          <div class="field"><span>行内边距</span><div style="display:flex;gap:8px;align-items:center"><div class="track" style="flex:1;height:3px;background:var(--panel-3);position:relative"><i style="position:absolute;left:0;top:0;bottom:0;width:30%;background:var(--line-3)"></i><b style="position:absolute;left:30%;top:-4px;width:11px;height:11px;border-radius:50%;background:var(--text);transform:translateX(-5px)"></b></div><span class="val">3 px</span></div></div>
+          <div class="field"><span>可见行</span><div class="val" style="color:var(--accent)">5 / 41</div></div>
+        </div>
+
+        <div class="iblock">
+          <div class="ilabel">内容</div>
+          <div class="chk" style="padding:5px 0"><span class="d">✓</span><span>显示元信息</span><span class="v">GAME CODE</span></div>
+          <div class="chk" style="padding:5px 0"><span class="d">✓</span><span>分组标题</span><span class="v">2 组</span></div>
+          <div class="chk" style="padding:5px 0"><span class="d">✓</span><span>分隔线</span><span class="v">1 px</span></div>
+          <div class="chk" style="padding:5px 0"><span style="color:var(--dim)">○</span><span>封面缩略图</span><span class="v">+2 KB</span></div>
+        </div>
+
+        <div class="iblock">
+          <div class="ilabel">选中态</div>
+          <div class="swatchrow">
+            <i class="on" style="background:#1E3B44;box-shadow:inset 2px 0 0 #6FF2C0"></i>
+            <i style="background:#6FF2C0"></i>
+            <i style="background:#16272F"></i>
+            <i style="background:transparent;border-style:dashed"></i>
+          </div>
+          <div style="font-size:10px;color:var(--dim);margin-top:5px">左侧条 + 反色（当前）</div>
+        </div>
+
+        <div class="note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none;margin-top:1px"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <div><b>改为 20px 可显示 6 行</b><br>但两行元信息会挤在一起，建议同时关闭「显示元信息」。</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="statusbar">
+    <span class="ok">● 结构已修改 · 自动保存</span>
+    <span>1 个模板 · 9 个区块 · 5 行</span>
+    <div class="r"><span>行高 24</span><span>可见 5 / 41</span><span>需 UI 运行时</span></div>
+  </footer>
+</div>
+</body></html>

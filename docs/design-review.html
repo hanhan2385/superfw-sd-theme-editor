@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>SuperFW Theme Studio · 界面审计与全新 UI 设计提案</title>
+<style>
+  :root{
+    --paper:#F5F3EC; --card:#FFFFFF; --ink:#16160F; --muted:#6C6A5E; --dim:#96938330;
+    --line:#DFDCD0; --line-2:#C9C5B6;
+    --olive:#3D4D00; --lime:#E3FF7C; --lime-soft:#F2FFC4;
+    --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+    --ui:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{display:grid;grid-template-columns:212px 1fr;gap:56px;max-width:1240px;margin:0 auto;padding:0 40px}
+
+  /* side nav */
+  nav{position:sticky;top:0;align-self:start;height:100vh;padding:44px 0 30px;display:flex;flex-direction:column}
+  nav .mk{display:flex;align-items:center;gap:9px;margin-bottom:34px}
+  nav .mk i{width:24px;height:24px;border-radius:3px;background:var(--olive);color:var(--lime);display:grid;place-items:center;font:800 12px/1 var(--mono);font-style:normal}
+  nav .mk span{font-size:11px;letter-spacing:.12em;font-weight:600}
+  nav a{display:flex;gap:9px;padding:5px 0;color:var(--muted);text-decoration:none;font-size:12.5px;line-height:1.3}
+  nav a b{font-family:var(--mono);font-size:10px;color:var(--line-2);font-weight:400;padding-top:2px}
+  nav a:hover{color:var(--ink)}
+  nav a.on{color:var(--ink);font-weight:600}
+  nav a.on b{color:var(--olive)}
+  nav .foot{margin-top:auto;font-size:10.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
+
+  main{padding:44px 0 90px;min-width:0}
+
+  /* header */
+  .eyebrow{font:10.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--olive);margin-bottom:14px}
+  h1{font-size:37px;line-height:1.18;letter-spacing:-.02em;font-weight:650;max-width:15em;text-wrap:balance}
+  h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--lime) 62%);padding:0 2px}
+  .lede{font-size:16px;color:var(--muted);max-width:44em;margin-top:16px}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .meta span{font:10px/1 var(--mono);letter-spacing:.04em;border:1px solid var(--line-2);border-radius:2px;padding:6px 8px;color:var(--muted);background:#fff}
+  .meta span b{color:var(--ink);font-weight:600}
+
+  section{padding-top:54px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--line-2);padding-top:14px;margin-bottom:20px}
+  .sec-h .num{font:11px/1 var(--mono);color:var(--olive);letter-spacing:.1em}
+  .sec-h h2{font-size:22px;letter-spacing:-.01em;font-weight:650}
+  .sec-h .tag{margin-left:auto;font:10px/1 var(--mono);color:var(--muted)}
+  h3{font-size:15px;font-weight:650;margin:26px 0 8px}
+  h4{font-size:12.5px;font-weight:650;margin:18px 0 6px;color:var(--ink)}
+  p{color:#33332B;max-width:52em;margin:8px 0}
+  p.small{font-size:13px;color:var(--muted)}
+  .k{font-family:var(--mono);font-size:.88em;background:#EAE7DC;padding:1px 4px;border-radius:2px}
+  mark{background:linear-gradient(transparent 60%,var(--lime) 60%);padding:0 1px}
+
+  /* stat strip */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:26px 0 4px}
+  .stat{background:#fff;padding:14px 16px}
+  .stat b{display:block;font:600 26px/1 var(--mono);letter-spacing:-.03em}
+  .stat b small{font-size:11px;color:var(--muted);letter-spacing:0}
+  .stat span{display:block;font-size:11px;color:var(--muted);margin-top:7px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;margin:16px 0 8px;font-size:12.5px;background:#fff;border:1px solid var(--line)}
+  th{text-align:left;font:9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line-2);background:#FBFAF5;white-space:nowrap}
+  td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:#3A3A31}
+  tr:last-child td{border-bottom:0}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  .pill{display:inline-block;font:9.5px/1 var(--mono);padding:3px 5px;border-radius:2px;border:1px solid currentColor;white-space:nowrap}
+  .pill.y{color:#3F6B00;background:#EFFBD8;border-color:#C6E39A}
+  .pill.n{color:#8A4A2E;background:#FBE9E1;border-color:#E8C3B4}
+  .pill.m{color:#7A5A00;background:#FFF6D9;border-color:#EBD79A}
+
+  /* problem cards */
+  .probs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .prob{background:#fff;border:1px solid var(--line);padding:14px 16px}
+  .prob .n{font:10px/1 var(--mono);color:var(--dim);color:#B5B2A4;letter-spacing:.1em}
+  .prob h4{margin:7px 0 5px;font-size:13px}
+  .prob p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.65}
+
+  /* goals */
+  .goals{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-top:16px}
+  .goal{background:#fff;padding:16px 18px}
+  .goal b{display:block;font-size:13px;margin-bottom:5px}
+  .goal b i{font-style:normal;color:var(--olive);font-family:var(--mono);font-size:10px;margin-right:7px}
+  .goal p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.65}
+
+  /* IA diagram */
+  .ia{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  .ia-card{background:#fff;border:1px solid var(--line);padding:14px}
+  .ia-card .cap{font:9.5px/1 var(--mono);letter-spacing:.1em;color:var(--muted);margin-bottom:12px;display:flex;justify-content:space-between}
+  .tabs{display:flex;gap:3px;margin-bottom:8px}
+  .tabs i{flex:1;height:22px;background:#EFECE2;border:1px solid var(--line);display:grid;place-items:center;font:8.5px/1 var(--mono);color:var(--muted);font-style:normal}
+  .tabs i.on{background:var(--olive);color:var(--lime);border-color:var(--olive)}
+  .lrow{height:20px;background:#F7F5EE;border:1px solid #ECE9DE;margin-bottom:3px;display:flex;align-items:center;padding:0 6px;font:8.5px/1 var(--mono);color:#8B8879}
+  .lrow.sel{background:var(--lime-soft);border-color:#D6E8A4;color:#4C5A16}
+  .newmodes{display:flex;gap:4px;margin-bottom:10px}
+  .newmodes i{flex:1;height:30px;border:1px solid var(--line);display:grid;place-items:center;font-size:9.5px;font-style:normal;color:var(--muted);background:#F7F5EE}
+  .newmodes i.on{background:var(--olive);color:var(--lime);border-color:var(--olive)}
+  .canvasbox{height:66px;border:1px solid var(--line-2);display:grid;place-items:center;font:9px/1 var(--mono);color:#9A978A;background:repeating-linear-gradient(45deg,#FBF9F2,#FBF9F2 6px,#F6F3E8 6px,#F6F3E8 12px)}
+  .filmrow{display:flex;gap:3px;margin-top:8px}
+  .filmrow i{flex:1;height:18px;border:1px solid var(--line);background:#EFECE2}
+  .filmrow i.on{border-color:var(--olive)}
+  .ialist{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7}
+
+  /* previews */
+  figure{margin:26px 0 6px}
+  figure img{width:100%;display:block;border:1px solid var(--line-2);box-shadow:0 18px 40px -28px rgba(0,0,0,.55)}
+  figcaption{display:flex;gap:14px;align-items:baseline;margin-top:10px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  figcaption .n{font:10px/1 var(--mono);color:var(--olive);letter-spacing:.1em;white-space:nowrap;padding-top:3px}
+  figcaption .t{font-size:13px;font-weight:650}
+  figcaption .d{font-size:12px;color:var(--muted);margin-left:auto;text-align:right;max-width:34em}
+  .notes{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;margin:12px 0 30px}
+  .notes div{font-size:12px;color:#4A4A40;line-height:1.65;padding-left:12px;position:relative}
+  .notes div::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;background:var(--olive);border-radius:50%}
+  .notes b{font-weight:650}
+
+  /* rationale */
+  .rat{display:grid;grid-template-columns:132px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+  .rat .h{font-size:11px;letter-spacing:.1em;color:var(--olive);font-family:var(--mono);text-transform:uppercase;padding-top:3px}
+  .rat p{margin:0 0 8px}
+  .rat p:last-child{margin:0}
+
+  /* roadmap */
+  .road{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  .phase{background:#fff;border:1px solid var(--line);padding:14px 16px;position:relative}
+  .phase .p{font:9.5px/1 var(--mono);letter-spacing:.1em;color:var(--muted)}
+  .phase h4{margin:8px 0 6px;font-size:13px}
+  .phase ul{margin:0;padding-left:14px;font-size:12px;color:var(--muted);line-height:1.7}
+  .phase .out{margin-top:10px;font:9.5px/1.5 var(--mono);color:var(--olive);border-top:1px dashed var(--line-2);padding-top:8px}
+
+  /* confirm */
+  .confirm{background:var(--ink);color:#EDEAE0;padding:26px 28px;margin-top:22px}
+  .confirm h3{color:#fff;margin:0 0 10px;font-size:16px}
+  .confirm p{color:#B9B6A8;font-size:13px;max-width:60em}
+  .confirm ol{margin:14px 0 0;padding-left:18px;color:#DAD7CB;font-size:13px;line-height:1.9}
+  .confirm b{color:var(--lime);font-weight:600}
+  .confirm .k{background:#2C2C23;color:#E7E4D6}
+  .confirm .foot{margin-top:16px;font:10px/1.6 var(--mono);color:#7E7C70;border-top:1px solid #33332A;padding-top:12px}
+
+  .callout{background:#fff;border-left:3px solid var(--olive);padding:12px 16px;margin:16px 0;font-size:13px;color:#3E3E34}
+  .callout b{font-weight:650}
+
+  footer{margin-top:60px;border-top:1px solid var(--line-2);padding-top:16px;font:10.5px/1.8 var(--mono);color:var(--muted)}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;gap:0;padding:0 20px}
+    nav{display:none}
+    main{padding-top:28px}
+    h1{font-size:30px}
+    .stats,.probs,.goals,.ia,.notes,.road{grid-template-columns:1fr}
+    .rat{grid-template-columns:1fr;gap:4px}
+  }
+</style></head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="mk"><i>S</i><span>SUPERFW STUDIO</span></div>
+    <a href="#audit" class="on"><b>00</b>现有界面审计</a>
+    <a href="#problems"><b>01</b>问题诊断</a>
+    <a href="#goals"><b>02</b>目标与理念</a>
+    <a href="#ia"><b>03</b>信息架构</a>
+    <a href="#preview"><b>04</b>界面预览</a>
+    <a href="#rationale"><b>05</b>设计依据</a>
+    <a href="#mapping"><b>06</b>落地映射</a>
+    <a href="#roadmap"><b>07</b>路线图</a>
+    <a href="#confirm"><b>08</b>待确认</a>
+    <div class="foot">设计提案 v0.9<br>2026-10-17<br>基于 superfw@1c9ff09</div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Interface audit &amp; redesign proposal</div>
+    <h1>给 SuperFW 补上<em>缺失的那一层</em>：一个以画布为中心的主题工作台</h1>
+    <p class="lede">审计发现，这个固件仓库里其实没有 Web 界面——主题是写死在 <span class="k">menu.c</span> 里的 6 组颜色常量，改一次要重编译、刷一次机。下面这份提案，先把现状拆开，再给出一个彻底换掉操作逻辑的 Web 端设计：<b>语义角色代替调色板下标，画布代替设置列表，约束预算代替事后报错。</b></p>
+    <div style="border:1px solid #E0C9A6;background:#FBF3E4;padding:10px 14px;margin:18px 0 0;font-size:12.5px;color:#6B4A1E;line-height:1.6">
+      <b>说明：</b>本文是概念稿。文中出现的版本号（1.4/1.5/1.6）、<span style="font-family:Consolas,monospace">theme.bin</span>、调色板槽位预算与兼容矩阵均为设想，固件中并不存在。事实以 <a href="grounded.html" style="color:#6B4A1E">《先画出它真实的样子》</a> 为准。
+    </div>
+    <div class="meta">
+      <span><b>范围</b> 界面审计 · IA · 交互 · 视觉</span>
+      <span><b>产物</b> 7 张界面预览 · 1 份设计规格</span>
+      <span><b>状态</b> 待评审</span>
+      <span><b>代码基线</b> superfw master</span>
+    </div>
+    <p style="margin-top:12px"><a href="ui-redesign.html" style="color:var(--olive);font-size:13px;text-decoration:none;border-bottom:1px solid var(--line-2)">→ 第二版：把界面本身变成可编排的（设备端 UI 重构）</a></p>
+
+    <!-- ============ 00 ============ -->
+    <section id="audit">
+      <div class="sec-h"><div class="num">00</div><h2>现有界面审计</h2><div class="tag">代码级核对</div></div>
+
+      <p><b>先说结论：这个仓库里没有 Web 界面。</b>全量检索 <span class="k">.html / .js / .ts / .css</span> 的结果为 0 个文件；固件是纯 C + ARM 汇编（<span class="k">src/</span> 70 个文件），资源是编译期打包的位图与字库。Web 侧只有一个独立的 Hugo 文档站（<span class="k">superfw.davidgf.net</span>，不在此仓库），它是说明书，不是可操作的界面。</p>
+
+      <p>所以「现有界面」只有两层：<b>卡带上的 240×160 菜单</b>，以及<b>文档站</b>。前者才是主题真正作用的对象，也是这次重设计的锚点。</p>
+
+      <div class="stats">
+        <div class="stat"><b>0</b><span>仓库内 Web 前端文件</span></div>
+        <div class="stat"><b>7</b><span>设备端顶级标签页</span></div>
+        <div class="stat"><b>6×6</b><span>内置主题数 × 颜色数</span></div>
+        <div class="stat"><b>240×160</b><span>可用画布（15-bit 色）</span></div>
+      </div>
+
+      <h3>设备端 UI 的解剖</h3>
+      <p>菜单是一套手写的 Mode-4 位图 UI：顶部 16px 图标条，下面 16px 行高的列表，弹窗用 window 层遮罩，图标是 16×16 的 OBJ 图块。下面这张示意图标出了它与主题相关的每个区域——新工作台的画布也按同样的分区来做命中检测。</p>
+
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;margin:18px 0 6px">
+        <div style="border:1px solid var(--line-2);background:#fff;padding:12px">
+          <div style="height:160px;background:#0E1A21;position:relative;border:1px solid #000;width:240px">
+            <div style="position:absolute;left:0;right:0;top:0;height:16px;background:#16272F;display:flex;align-items:center;padding:0 3px;gap:3px">
+              <span style="width:10px;height:10px;background:#6FF2C0"></span>
+              <span style="width:10px;height:10px;background:#31454C"></span>
+              <span style="width:10px;height:10px;background:#31454C"></span>
+              <span style="width:10px;height:10px;background:#31454C"></span>
+              <span style="width:10px;height:10px;background:#31454C"></span>
+            </div>
+            <div style="position:absolute;left:0;right:0;top:16px;bottom:0;padding:3px 2px">
+              <div style="height:18px;background:#1E3B44;margin-bottom:1px"></div>
+              <div style="height:18px;background:#0F2027;margin-bottom:1px"></div>
+              <div style="height:18px;background:#0F2027;margin-bottom:1px"></div>
+              <div style="height:18px;background:#0F2027;margin-bottom:1px"></div>
+              <div style="height:18px;background:#0F2027"></div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:10px;background:#16272F"></div>
+          </div>
+          <div style="margin-top:10px;font:9.5px/1.75 var(--mono);color:var(--muted)">
+            ① 图标条 16px · FG + OBJ 调色板<br>
+            ② 列表行 16px · HI 高亮 + FT 文字<br>
+            ③ 底部提示 / 弹窗 · FG 描边 + BG 填充
+          </div>
+        </div>
+        <div>
+          <table>
+            <tr><th>层级</th><th>代码位置</th><th>形态</th><th>可改性</th></tr>
+            <tr><td>菜单骨架</td><td class="mono">src/menu.c:49–60<br>2061–2114</td><td>7 个顶级标签，L/R 横向切换</td><td><span class="pill n">编译期</span></td></tr>
+            <tr><td>主题表</td><td class="mono">src/menu.c:213–228</td><td>6 组 × 6 色（BGR555）</td><td><span class="pill n">编译期</span></td></tr>
+            <tr><td>主题选择</td><td class="mono">src/settings.c:106–133</td><td><span class="k">theme=N</span> 存于 <span class="k">ui-settings.txt</span></td><td><span class="pill y">运行时</span></td></tr>
+            <tr><td>图标</td><td class="mono">src/res/icons.h</td><td>17 个 16×16 OBJ 图块，共用 256 色 OBJ 调色板</td><td><span class="pill n">编译期</span></td></tr>
+            <tr><td>字体</td><td class="mono">res/fonts/*.hex</td><td>unscii-16 位图，8×16，14 种语言</td><td><span class="pill n">编译期</span></td></tr>
+            <tr><td>游戏内菜单</td><td class="mono">src/ingame_menu.c</td><td>独立渲染器，复用 IGM_PAL_* 四个槽</td><td><span class="pill n">编译期</span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <h3>主题到底是怎么生效的</h3>
+      <p>六个颜色角色（<span class="k">fg / bg / ft / hi / hi_blend / sh</span>）在启动时被写进 GBA 调色板的 16–19 号槽位，游戏内菜单另占 240–243 号槽；图标用的是另一块 256 色 OBJ 调色板，Logo 还有一套独立调色板。<b>颜色是 15-bit（每通道 5 位）</b>，任何设计在落盘前都会被量化——这正是新工具需要实时展示的物理约束。</p>
+      <div class="callout"><b>关键发现：</b>主题不是「资源文件」，而是<b>编译进固件的常量数组</b>。今天想换配色，只有两条路：改 <span class="k">themes[]</span> 重新编译整个固件，或者用 L/R 在已有的 6 个预设里挑一个。没有第三条路。</div>
+
+      <h3>Web 侧现状</h3>
+      <p>文档站是 Hugo 生成的静态站：左侧章节栏 + 单列正文 + 上下篇导航，内容覆盖安装、烧录、存档、补丁、模拟器等。<b>它不提供任何参数化能力</b>——没有主题编辑器、没有配置生成器，用户读完文档仍需回到命令行或源码。</p>
+    </section>
+
+    <!-- ============ 01 ============ -->
+    <section id="problems">
+      <div class="sec-h"><div class="num">01</div><h2>问题诊断</h2><div class="tag">为什么不能只做一个换色面板</div></div>
+      <div class="probs">
+        <div class="prob"><div class="n">P1</div><h4>创作闭环断裂</h4><p>改一个颜色 → 重新编译 → 刷机 → 开机看效果。一轮几分钟，且失败要重刷。作者无法进入「调—看—再调」的节奏。</p></div>
+        <div class="prob"><div class="n">P2</div><h4>只有整包，没有角色</h4><p>6 个预设各是一整套配色，想「保留深色底、只把强调色换成青色」做不到——除非手改源码里的十六进制。</p></div>
+        <div class="prob"><div class="n">P3</div><h4>盲改，没有反馈</h4><p>不知道某个颜色用在哪些界面、改完对比度够不够、量化到 15-bit 会不会脏。所有判断都发生在刷机之后。</p></div>
+        <div class="prob"><div class="n">P4</div><h4>没有版本语义</h4><p>1.4 / 1.5 / 1.6 的调色板槽位和加载能力不同，但没有任何地方告诉作者「这个改动在老固件上会怎样」。</p></div>
+        <div class="prob"><div class="n">P5</div><h4>资产管线各自为政</h4><p>图标走 <span class="k">iconcv.py</span>，字库走 <span class="k">fonts/generator.py</span>，语言走 <span class="k">messages.py</span>。换一个图标要先装 Python 工具链。</p></div>
+        <div class="prob" style="border-style:dashed;display:grid;place-items:center"><p style="text-align:center;color:#8C8979">这五条指向同一个结论：<br><b style="color:var(--ink)">缺的不是皮肤，是工作流。</b></p></div>
+      </div>
+    </section>
+
+    <!-- ============ 02 ============ -->
+    <section id="goals">
+      <div class="sec-h"><div class="num">02</div><h2>核心目标与设计理念</h2><div class="tag">四条目标 · 三条理念 · 一条非目标</div></div>
+      <div class="goals">
+        <div class="goal"><b><i>G1</i>画布优先</b><p>打开即见 240×160 的真实屏幕，所有编辑都在它上面发生；没有「先去某个页面设置，再回来预览」。</p></div>
+        <div class="goal"><b><i>G2</i>语义角色</b><p>作者调的是 Surface / Accent / Highlight 这些有含义的角色，不是调色板下标；工具负责映射到 16 个硬件槽位。</p></div>
+        <div class="goal"><b><i>G3</i>约束前置</b><p>槽位、对比度、色差、字库覆盖在编辑时实时可见，而不是导出时弹一堆错误。</p></div>
+        <div class="goal"><b><i>G4</i>一条路径到产物</b><p>从想法到可安装的固件/主题包，中间不离开浏览器，不需要装工具链。</p></div>
+      </div>
+      <p class="small" style="margin-top:10px"><b>非目标：</b>不做像素画编辑器。图标仍由 Aseprite 之类的工具创作，工作台只负责导入、量化、映射与着色。</p>
+
+      <h3>设计理念</h3>
+      <div class="rat" style="border-top:1px solid var(--line)">
+        <div class="h">仪表台，不是设置页</div>
+        <div><p>主题编辑本质是<b>测量</b>：色差 ΔE、对比度、槽位占用、字节预算。界面因此借用实验室仪器的语言——刻度、细线、等宽数字、单色底。设置页的隐喻（分组、开关、保存按钮）会掩盖这些量。</p></div>
+      </div>
+      <div class="rat">
+        <div class="h">设备是唯一的主角</div>
+        <div><p>工作台自身几乎无彩色：炭黑底、米白字、一个酸性青柠作强调。整个屏幕里唯一饱和的东西是中间那块 240×160 的屏幕——眼睛不需要在「工具的配色」和「作品的配色」之间做区分。</p></div>
+      </div>
+      <div class="rat" style="border-bottom:1px solid var(--line)">
+        <div class="h">约束即界面</div>
+        <div><p>GBA 的限制不该以红色报错的形式出现。调色板只剩 2 槽、某角色量化后 ΔE 偏大、字库缺 8% 字形——这些都变成常驻的预算条和角标，作者在动手前就知道边界在哪。</p></div>
+      </div>
+    </section>
+
+    <!-- ============ 03 ============ -->
+    <section id="ia">
+      <div class="sec-h"><div class="num">03</div><h2>信息架构：从「七个平行标签」到「一个文档 + 四种模式」</h2></div>
+      <p>旧结构是设备菜单的直接移植：七个互不相干的标签平铺，设置是一张长列表，改完点保存。新结构围绕<b>一个主题文档</b>组织，四种模式只是同一份文档的不同视角——切换模式不丢上下文，也不需要「保存」。</p>
+
+      <div class="ia">
+        <div class="ia-card">
+          <div class="cap"><span>BEFORE · 设备菜单 / 现有设置流</span><span>7 tabs</span></div>
+          <div class="tabs"><i>最近</i><i>文件</i><i>NOR</i><i class="on">设置</i><i>界面</i><i>工具</i><i>关于</i></div>
+          <div class="lrow">自动加载 <span style="margin-left:auto">开</span></div>
+          <div class="lrow">自动存档 <span style="margin-left:auto">开</span></div>
+          <div class="lrow">补丁策略 <span style="margin-left:auto">Auto</span></div>
+          <div class="lrow">RTC 速度 <span style="margin-left:auto">3</span></div>
+          <div class="lrow sel">主题 <span style="margin-left:auto">&lt; 3 &gt;</span></div>
+          <div class="lrow">动画速度 <span style="margin-left:auto">&lt; 中 &gt;</span></div>
+          <div class="ialist">线性、并列、无预览。主题只是列表里的一行，左右键切换 6 个整包。改不了其中任何一个颜色。</div>
+        </div>
+        <div class="ia-card">
+          <div class="cap"><span>AFTER · Theme Studio</span><span>4 modes</span></div>
+          <div class="newmodes"><i class="on">画布</i><i>资产</i><i>行为</i><i>发布</i></div>
+          <div class="canvasbox">240 × 160 画布 · 点选即角色</div>
+          <div class="filmrow"><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="ialist">一个文档，四种视角：画布改颜色与布局观感，资产管图标/字库/槽位，行为改启动路径与标签顺序，发布做兼容与产物。胶片条贯穿始终。</div>
+        </div>
+      </div>
+
+      <table style="margin-top:20px">
+        <tr><th>维度</th><th>现有</th><th>新设计</th></tr>
+        <tr><td>导航</td><td>7 个顶级标签横向循环，A 进入 B 返回</td><td>左侧 4 个模式 + 底部 8 帧胶片；模式内用检查器分页，不跳页</td></tr>
+        <tr><td>对象</td><td>「主题」= 一个序号（0–5）</td><td>「主题」= 一份文档（角色、资产、行为、目标版本），可命名、可版本化</td></tr>
+        <tr><td>编辑单位</td><td>整包切换</td><td>单个语义角色；支持锁定、派生、批量应用</td></tr>
+        <tr><td>反馈</td><td>刷机后才知道</td><td>画布实时渲染 + 量化预览 + 约束角标</td></tr>
+        <tr><td>保存</td><td>模态确认框「保存成功」</td><td>无保存概念，本地自动存草稿，发布才落产物</td></tr>
+      </table>
+    </section>
+
+    <!-- ============ 04 ============ -->
+    <section id="preview">
+      <div class="sec-h"><div class="num">04</div><h2>界面预览</h2><div class="tag">7 个关键场景</div></div>
+      <p class="small">以下均为 1:1 设计稿（1440×900，移动端 390×844），可直接对照实现。设备屏幕内的像素内容为示意，实际应由固件字体渲染器绘制。</p>
+
+      <figure>
+        <img src="../design/preview/01-compose.png" alt="画布模式">
+        <figcaption><span class="n">04.1</span><span class="t">画布 · 默认工作区</span><span class="d">左：语义角色与屏幕清单；中：3× 设备画布；右：角色检查器。顶栏常驻目标版本、约束状态与导出。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>点选即定位：</b>点画布上任意区域，直接选中它背后的语义角色，并高亮其他 6 处使用点——不用去列表里找。</div>
+        <div><b>角色而非下标：</b>左侧 7 个角色带锁定标记；锁定的 Ink 不参与自动派生，避免「一改全变」。</div>
+        <div><b>屏幕胶片：</b>底部 8 帧覆盖全部界面，角标标出有问题的屏幕，<span class="k">[</span> <span class="k">]</span> 直接切换。</div>
+        <div><b>预算常驻：</b>调色板 14/16、体积 +1.2 KB 就在手边；越界前就会看到。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/02-palette.png" alt="配色实验台">
+        <figcaption><span class="n">04.2</span><span class="t">配色实验台 · 从一个种子生成整套</span><span class="d">替代「手填 7 个十六进制」：给一个种子色，按 OKLCH 推导其余角色，并当场量化到 BGR555。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>沙盒语义：</b>实验台是覆盖层，未点「应用」不写入文档；顶栏明确显示「未应用生成结果」。</div>
+        <div><b>约束即结果：</b>每行同时给出 HEX、BGR555 与 ΔE；超阈值的一行单独标黄，并给出一键修正建议。</div>
+        <div><b>三个候选：</b>冷静 / 高对比 / 暖色并排，缩小到 74px 的屏幕缩略图里比较，而不是比色卡。</div>
+        <div><b>派生顺序可见：</b>右侧写出 Seed → Accent → Highlight → … 让人知道改种子会连带改什么。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/03-compare.png" alt="对比模式">
+        <figcaption><span class="n">04.3</span><span class="t">对比 · 与出厂主题 A/B 擦除</span><span class="d">同一屏、同一行选中态，中线可拖动。右侧差异清单支持逐项回退。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>只读保护：</b>对比模式不写文档，避免「看着看着改坏了」；退出才回到编辑。</div>
+        <div><b>差异可量化：</b>每个角色给出去向与 ΔE，平均 ΔE 46.2；结构差异明确写 0，让人放心导出。</div>
+        <div><b>可读性模拟：</b>左侧直接给「非背光 GBA / AGS-101」两种屏幕下的判断，这是老玩家真正关心的。</div>
+        <div><b>基线可选：</b>出厂 6 套主题都能当基线，也能和上一版草稿比。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/04-behavior.png" alt="行为模式">
+        <figcaption><span class="n">04.4</span><span class="t">行为 · 导航图代替设置列表</span><span class="d">启动路径、标签顺序、按键映射被画成一张可达性图，改动直接反映在图上。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>路径可读：</b>Boot → Logo → 主菜单 → 文件 → 载入 → 游戏，一条线看清「几步到游戏、几秒开机」。</div>
+        <div><b>顺序可拖：</b>左侧标签列表拖拽即改顺序，右侧图同步重排——这是主题的一部分，不只是设置。</div>
+        <div><b>后果写清：</b>关闭「最近菜单」会少一个标签、L/R 循环变 6 格，且这是原生行为、不需要补丁。</div>
+        <div><b>固定项标明：</b>按键映射标「固件固定」，避免让人误以为可以改。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/05-assets.png" alt="资产模式">
+        <figcaption><span class="n">04.5</span><span class="t">资产 · 图标、槽位与字库</span><span class="d">17 个原生图标 + 导入图标同屏管理；调色板 16 槽的可视化预算；字库覆盖按语言给出百分比。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>槽位是硬约束：</b>16 个格子画出来，空的用虚线，剩 2 格时右上角直接提示——比报错更早。</div>
+        <div><b>变体而非重画：</b>单色 / 双色 / 三色的槽位成本不同，选择时就把成本写出来（1 / 3 / 5 槽）。</div>
+        <div><b>导入即量化：</b>PNG/SVG 拖进来自动裁到 16×16、降到 4bpp，并尝试复用现有槽位。</div>
+        <div><b>字库透明：</b>覆盖率按 Latin / CJK / Kana 分列，缺字形在发布前就暴露。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/06-ship.png" alt="发布模式">
+        <figcaption><span class="n">04.6</span><span class="t">发布 · 清单、兼容矩阵与两条安装路径</span><span class="d">把「导出」从一个按钮变成一份可核对的发货清单：产物、体积、校验、兼容性、安装步骤。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>兼容矩阵：</b>每项能力在 1.4 / 1.5 / 1.6 上是原生、需补丁还是不可用，一目了然。</div>
+        <div><b>两条路径：</b>1.7+ 放 <span class="k">theme.bin</span> 运行时切换；1.6.x 用注入方式写进固件——不假装老固件支持新格式。</div>
+        <div><b>校验清单：</b>槽位、对比度、字库、图标尺寸、主题名长度逐项打勾，失败项会变成阻塞。</div>
+        <div><b>回滚随包：</b>自动生成恢复出厂主题的脚本，降低「刷坏了」的心理成本。</div>
+      </div>
+
+      <figure>
+        <img src="../design/preview/07-mobile.png" alt="移动端" style="max-width:390px;margin:0 auto">
+        <figcaption style="max-width:390px;margin-left:auto;margin-right:auto;flex-wrap:wrap"><span class="n">04.7</span><span class="t">移动端 · 同一套逻辑的收敛形态</span><span class="d">390×844：画布优先，检查器变底部抽屉，胶片横滑，四种模式下沉为底栏。</span></figcaption>
+      </figure>
+      <div class="notes">
+        <div><b>不缩水：</b>画布仍按整数倍缩放（1.5×），保证像素判断不失真；双指缩放只改变视图，不改数据。</div>
+        <div><b>拇指可达：</b>最常用的「应用」固定在抽屉底部，色相/饱和/明度三条滑杆在单手拇指弧内。</div>
+        <div><b>角色横滑：</b>7 个色点一行，选中态用描边环；比下拉菜单快，也比列表省空间。</div>
+        <div><b>场景取舍：</b>手机上不提供资产导入与发布，只保留「看与微调」——这两件事本就需要大屏。</div>
+      </div>
+    </section>
+
+    <!-- ============ 05 ============ -->
+    <section id="rationale">
+      <div class="sec-h"><div class="num">05</div><h2>设计依据</h2><div class="tag">五个方面</div></div>
+
+      <div class="rat">
+        <div class="h">视觉风格</div>
+        <div>
+          <p><b>炭黑仪表台 + 单一强调色。</b>主题工作的核心是判断颜色，工具本身必须中性：<span class="k">#0B0B09</span> 底、<span class="k">#ECE8DE</span> 字、<span class="k">#D9FF57</span> 只用于「当前选中/可交互」。这样 240×160 里的青绿是全场唯一的饱和色，视线自然落到作品上。</p>
+          <p><b>细线与等宽数字。</b>1px 分隔线、2px 圆角、10px 大写小标题、等宽数值——借用示波器/测试仪器的语汇，让 ΔE、槽位、字节这些量看起来「可读」而不是装饰。</p>
+        </div>
+      </div>
+      <div class="rat">
+        <div class="h">信息组织</div>
+        <div>
+          <p><b>三层稳定结构：</b>左（对象：角色/屏幕/标签）→ 中（画布）→ 右（当前对象的属性）。任何模式下这三层都不变，只换内容，降低重新学习的成本。</p>
+          <p><b>渐进披露：</b>默认只显示 7 个角色和 8 帧屏幕；槽位、ΔE、字库覆盖这些进阶量放在检查器和预算条里，不抢占首屏。</p>
+          <p><b>状态与对象分离：</b>「屏幕状态」是导航（去哪一帧），「角色」是编辑对象；两者在左栏分区，避免把「选中某个屏幕」误当成「选中某个颜色」。</p>
+        </div>
+      </div>
+      <div class="rat">
+        <div class="h">操作路径</div>
+        <div>
+          <p><b>主路径 3 步：</b>选屏幕 → 点画布区域 → 调三个滑杆。旧路径是「改代码 → 编译 → 刷机 → 开机 → 判断」，步数从 5 步（分钟级）降到 3 步（秒级）。</p>
+          <p><b>次路径可逆：</b>对比模式只读；实验台是沙盒；每个操作都有命名撤销（「把 Accent 调亮」而不是「撤销」）。</p>
+          <p><b>键盘优先：</b><span class="k">Ctrl K</span> 命令面板、<span class="k">[ ]</span> 切屏、<span class="k">空格</span> A/B、方向键微调 1 单位、<span class="k">Shift</span> 加速 10 单位。专业工具不该只能拖鼠标。</p>
+        </div>
+      </div>
+      <div class="rat">
+        <div class="h">响应式</div>
+        <div>
+          <p><b>断点按「画布能否整数倍显示」定，而不是按设备宽度定。</b>≥1280 三栏（56 + 252 + 1fr + 312）；900–1280 收起左栏为抽屉，画布保持 3×；&lt;900 单列，画布 1.5×，检查器变底部抽屉，胶片横滑。</p>
+          <p><b>触控目标 ≥44px</b>（移动端色点 26px 视觉 + 8px 透明外扩），滑杆轨道 4px 但命中区 28px；桌面端保持 28–32px 的紧凑密度。</p>
+        </div>
+      </div>
+      <div class="rat">
+        <div class="h">易用性与无障碍</div>
+        <div>
+          <p><b>色弱友好：</b>角色不仅靠颜色区分，还有名称、序号与图标；提供绿弱/红弱模拟，对比度按 5-bit 量化后的值计算，而不是 sRGB 理论值。</p>
+          <p><b>减少不可逆操作：</b>没有「保存」按钮，编辑即草稿（IndexedDB），发布才产生文件；覆盖前自动存快照。</p>
+          <p><b>错误可解释：</b>每条校验都带「为什么」和「怎么修」，例如「Shadow 量化 ΔE 1.9 → 建议 #071318」，而不是一句「导出失败」。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 06 ============ -->
+    <section id="mapping">
+      <div class="sec-h"><div class="num">06</div><h2>落地映射：每个控件对应固件的什么</h2><div class="tag">可行性分级</div></div>
+      <p>这套界面之所以能成立，是因为每个编辑项都能对应到一个具体的落点。下表把「界面上能改什么」翻译成「固件里要动什么」，并标出是否需要固件侧配合——这也是版本兼容性设计的依据。</p>
+      <table>
+        <tr><th>界面能力</th><th>固件落点</th><th>现状</th><th>导出方式</th><th>固件要求</th></tr>
+        <tr><td>7 个颜色角色</td><td class="mono">menu.c themes[]<br>调色板 16–19 / 240–243</td><td>编译期常量</td><td>主题包 / 注入 .fw / C 数组</td><td><span class="pill m">任意版本</span></td></tr>
+        <tr><td>图标替换与着色</td><td class="mono">src/res/icons.h<br>OBJ 调色板</td><td>编译期资源</td><td>注入 .fw</td><td><span class="pill m">1.5+ 可注入</span></td></tr>
+        <tr><td>字库子集</td><td class="mono">res/fonts.pack</td><td>编译期资源</td><td>注入 .fw</td><td><span class="pill m">任意版本</span></td></tr>
+        <tr><td>主题切换</td><td class="mono">ui-settings.txt theme=N</td><td>运行时</td><td>文本片段</td><td><span class="pill y">原生</span></td></tr>
+        <tr><td>动画速度 / 最近菜单 / 隐藏文件</td><td class="mono">ui-settings.txt</td><td>运行时</td><td>文本片段</td><td><span class="pill y">原生</span></td></tr>
+        <tr><td>标签顺序 / 默认标签</td><td class="mono">menu.c tab 表</td><td>编译期</td><td>注入 .fw</td><td><span class="pill n">需补丁</span></td></tr>
+        <tr><td>运行时换主题（不刷机）</td><td>建议新增 <span class="k">/.superfw/themes/</span> 加载器</td><td>不存在</td><td>theme.bin</td><td><span class="pill n">1.7+ 新功能</span></td></tr>
+      </table>
+      <p class="small">这张表直接决定了「发布」页的兼容矩阵：<b>绿色 = 原生可做，黄色 = 需要注入/补丁，灰色 = 该版本做不到</b>。工具不隐瞒代价。</p>
+
+      <h3>兼容性策略（三个层次）</h3>
+      <p><b>1. 基线声明：</b>文档记录目标固件版本与构建号，导出时把版本写进产物头，加载时校验，不匹配则拒绝而非静默出错。</p>
+      <p><b>2. 能力降级：</b>1.5.x 只有 6 个颜色槽时，Highlight 自动合并到 Surface Alt 并在报告里标红；1.4.x 不产出 theme.bin，只给源码补丁说明。</p>
+      <p><b>3. 前向兼容：</b>theme.bin 采用 TLV 结构（type-length-value），未知字段跳过而非报错，后续加字段不破坏老加载器。</p>
+    </section>
+
+    <!-- ============ 07 ============ -->
+    <section id="roadmap">
+      <div class="sec-h"><div class="num">07</div><h2>实施路线</h2><div class="tag">三个阶段</div></div>
+      <div class="road">
+        <div class="phase"><div class="p">PHASE 1 · 2 周</div><h4>只读工作台</h4><ul><li>解析固件/资源包</li><li>240×160 画布与 8 帧</li><li>角色映射与预算条</li><li>对比模式</li></ul><div class="out">产物：可看、可对照，不可导出</div></div>
+        <div class="phase"><div class="p">PHASE 2 · 3 周</div><h4>可编辑与导出</h4><ul><li>种子派生 + 锁定</li><li>图标/字库导入与量化</li><li>ui-settings 片段</li><li>注入 .fw</li></ul><div class="out">产物：能真正产出可刷的固件</div></div>
+        <div class="phase"><div class="p">PHASE 3 · 2 周</div><h4>协作与兼容</h4><ul><li>版本矩阵自动化</li><li>主题包分享链接</li><li>移动端微调</li><li>撤销历史与快照</li></ul><div class="out">产物：可分享、可回滚</div></div>
+      </div>
+      <p class="small" style="margin-top:12px"><b>技术选型建议：</b>Vite + React + TypeScript；画布用 Canvas 2D（不是 DOM）以保证 1:1 像素与取色命中；状态用 Zustand + 命令栈；颜色计算用 culori（OKLCH / ΔE2000）；解析与打包逻辑做成独立 wasm/TS 包，方便 CLI 复用。</p>
+    </section>
+
+    <!-- ============ 08 ============ -->
+    <section id="confirm">
+      <div class="sec-h"><div class="num">08</div><h2>待确认</h2><div class="tag">确认后再进入实现</div></div>
+      <div class="confirm">
+        <h3>三个决策点，定了就开工</h3>
+        <p>方向已经收敛为「画布为中心的 Web 工作台」，但有三处会显著改变实现范围，需要你拍板：</p>
+        <ol>
+          <li><b>导出形态：</b>先做「注入 .fw」（现在就能用，但要处理固件校验和与版本偏移），还是先推动固件侧加一个 ~2 KB 的 <span class="k">theme.bin</span> 加载器（更干净，但要改固件、等 1.7）？</li>
+          <li><b>首版范围：</b>只做颜色 + 行为（2 周内可交付、覆盖 80% 需求），还是一次把图标与字库也做进去（+3 周，但真正做到「换一套皮」）？</li>
+          <li><b>视觉基调：</b>保持这套深色仪表台，还是换成浅色「图纸/编辑器」风格？前者更适合判色，后者更适合长时间阅读文档与团队评审。</li>
+        </ol>
+        <div class="foot">确认后我将按 PHASE 1 开始搭建：先做固件/资源解析器与 240×160 画布，再逐层加编辑能力。</div>
+      </div>
+      <footer>本提案基于对 superfw 仓库（master @1c9ff09）的静态审计与对固件渲染路径的代码阅读；界面预览为设计稿，非实际截图。</footer>
+    </section>
+  </main>
+</div>
+</body></html>
