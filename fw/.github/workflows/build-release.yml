@@ -1,0 +1,86 @@
+name: SuperFW release
+run-name: Build a full SuperFW release
+
+on:
+  push:
+    branches:
+      - 'master'
+    tags:
+      - '*'
+
+jobs:
+  build-firmware:
+    runs-on: ubuntu-26.04
+    strategy:
+      matrix:
+        board: [sd, lite, chis]
+
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get install gcc-arm-none-eabi
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+      - name: Arrange files
+        run: |
+          cp res/patches.db patches.db
+      - name: Build firmware
+        run: |
+          make BOARD=${{ matrix.board }} clean
+          make BOARD=${{ matrix.board }} COMPRESSION_RATIO=10
+          mv superfw.gba superfw-${{ matrix.board }}.fw
+          cp superfw.dldi.payload superfw-${{ matrix.board }}.dldi
+      - name: Upload firmware release
+        uses: actions/upload-artifact@v4
+        with:
+          name: superfw-release-${{ matrix.board }}-${{ steps.slug.outputs.sha8 }}
+          path: |
+            superfw-${{ matrix.board }}.fw
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: superfw-debug-${{ matrix.board }}-${{ steps.slug.outputs.sha8 }}
+          path: |
+            superfw-${{ matrix.board }}.fw
+            directsave.elf
+            firmware.elf
+            firmware.ewram.elf
+            ingamemenu.elf
+            superfw.dldi.elf
+      - name: Upload extra artifacts
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: superfw-dev-${{ matrix.board }}-${{ steps.slug.outputs.sha8 }}
+          path: |
+            superfw-${{ matrix.board }}.fw
+            superfw-${{ matrix.board }}.dldi
+            patches.db
+
+  release:
+    needs: build-firmware
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: 'superfw-release-*'
+          path: artifacts
+      - name: Create release and upload firmware
+        run: |
+          gh release create "${GITHUB_REF#refs/tags/}" \
+            --title "Release ${GITHUB_REF#refs/tags/}" \
+            --notes-from-tag \
+            artifacts/**/*.fw
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
