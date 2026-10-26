@@ -1,0 +1,62 @@
+/* 真实固件界面复原：240x160 @4x，White 主题（默认 themes[0]） */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:960px;height:640px;overflow:hidden;background:#000}
+.dev{width:960px;height:640px}
+.screen{
+  width:240px;height:160px;transform:scale(4);transform-origin:top left;
+  background:#FFFFFF;color:#000;position:relative;overflow:hidden;
+  font-family:Consolas,"Courier New",monospace;font-size:9px;line-height:1;
+  -webkit-font-smoothing:none;
+}
+.screen *{box-sizing:border-box;position:absolute}
+/* 调色板: FG #AAA / BG #FFF / FT #000 / HI #CCC / hi_blend #9999BB */
+
+.topbar{left:0;top:0;width:240px;height:16px;background:#AAAAAA}
+.tab{width:16px;height:16px;top:0}
+.tab.dim{opacity:.45}
+.counter{right:2px;top:2px;font-size:8px;color:#000;letter-spacing:0}
+.bottombar{left:0;top:144px;width:240px;height:16px;background:#AAAAAA}
+.path{left:8px;top:146px;font-size:8px;color:#000}
+
+.row{left:0;width:240px;height:16px}
+.row .nm{left:20px;top:4px;font-size:8px;white-space:nowrap}
+.row .sz{right:2px;top:4px;font-size:8px}
+.row.sel{background:rgba(153,153,187,.55)}
+
+/* 16x16 sprites from the real icons.png (272x16, 17 tiles) */
+.ico{width:16px;height:16px;background-image:url(../../ref/superfw/res/icons.png);
+  background-repeat:no-repeat;background-size:272px 16px;image-rendering:pixelated}
+.ico.i0{background-position:0 0}.ico.i1{background-position:-16px 0}
+.ico.i2{background-position:-32px 0}.ico.i3{background-position:-48px 0}
+.ico.i4{background-position:-64px 0}.ico.i5{background-position:-80px 0}
+.ico.i6{background-position:-96px 0}.ico.i7{background-position:-112px 0}
+.ico.i8{background-position:-128px 0}.ico.i9{background-position:-144px 0}
+.ico.i10{background-position:-160px 0}.ico.i11{background-position:-176px 0}
+.ico.i12{background-position:-192px 0}.ico.i13{background-position:-208px 0}
+.ico.i14{background-position:-224px 0}.ico.i15{background-position:-240px 0}
+.ico.i16{background-position:-256px 0}
+
+/* 弹窗 */
+.popbox{left:2px;top:18px;width:236px;height:140px;border:1px solid #AAAAAA}
+.popbg{left:3px;top:19px;width:234px;height:138px;background:#FFFFFF}
+.ptitle{left:0;top:21px;width:240px;text-align:center;font-size:9px}
+.parrow{font-size:9px;top:21px}
+.pname{left:0;top:49px;width:240px;text-align:center;font-size:9px}
+.pcode{left:0;top:80px;width:240px;text-align:center;font-size:8px}
+.psave{left:0;top:100px;width:240px;text-align:center;font-size:8px}
+.pbtn{left:20px;top:132px;width:200px;height:20px;border:1px solid #AAAAAA}
+.pbtntext{left:0;top:136px;width:240px;text-align:center;font-size:9px}
+
+/* 设置行 */
+.srow{left:0;width:240px;height:20px}
+.srow .k{left:8px;top:6px;font-size:8px}
+.srow .v{left:120px;width:100px;top:6px;text-align:center;font-size:8px}
+.srow.sel{background:rgba(153,153,187,.55)}
+.arrowup{left:0;top:13px;width:240px;text-align:center;font-size:8px}
+.savebtn{left:20px;top:132px;width:200px;height:20px;border:1px solid #AAAAAA}
+.savetext{left:0;top:136px;width:240px;text-align:center;font-size:9px}
+.helpbar{left:0;top:140px;width:240px;height:20px;background:#AAAAAA}
+
+/* 文字列表（工具页） */
+.trow{left:22px;font-size:9px;top:0}
+.selmark{font-size:9px;top:0}

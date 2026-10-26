@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>SuperFW · 先看真的，再谈改的</title>
+<style>
+  :root{
+    --paper:#F5F3EC; --ink:#16160F; --muted:#6C6A5E; --line:#DFDCD0; --line-2:#C9C5B6;
+    --olive:#3D4D00; --lime:#E3FF7C; --red:#8A3B22;
+    --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+    --ui:"Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{display:grid;grid-template-columns:200px 1fr;gap:52px;max-width:1200px;margin:0 auto;padding:0 40px}
+  nav{position:sticky;top:0;align-self:start;height:100vh;padding:44px 0 30px;display:flex;flex-direction:column}
+  nav .mk{display:flex;align-items:center;gap:9px;margin-bottom:30px}
+  nav .mk i{width:24px;height:24px;border-radius:3px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font:800 12px/1 var(--mono);font-style:normal}
+  nav .mk span{font-size:11px;letter-spacing:.12em;font-weight:600}
+  nav a{display:flex;gap:9px;padding:5px 0;color:var(--muted);text-decoration:none;font-size:12.5px}
+  nav a b{font-family:var(--mono);font-size:10px;color:#BDBAAE;font-weight:400;padding-top:2px}
+  nav a.on{color:var(--ink);font-weight:600}
+  nav a.on b{color:var(--olive)}
+  nav .foot{margin-top:auto;font-size:10.5px;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
+  main{padding:44px 0 90px;min-width:0}
+  .eyebrow{font:10.5px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--olive);margin-bottom:14px}
+  h1{font-size:36px;line-height:1.18;letter-spacing:-.02em;font-weight:650;max-width:16em;text-wrap:balance}
+  h1 em{font-style:normal;background:linear-gradient(transparent 62%,var(--lime) 62%);padding:0 2px}
+  .lede{font-size:16px;color:var(--muted);max-width:46em;margin-top:16px}
+  section{padding-top:52px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;border-top:1px solid var(--line-2);padding-top:14px;margin-bottom:18px}
+  .sec-h .num{font:11px/1 var(--mono);color:var(--olive);letter-spacing:.1em}
+  .sec-h h2{font-size:22px;letter-spacing:-.01em;font-weight:650}
+  .sec-h .tag{margin-left:auto;font:10px/1 var(--mono);color:var(--muted)}
+  h3{font-size:15px;font-weight:650;margin:26px 0 8px}
+  p{color:#33332B;max-width:52em;margin:8px 0}
+  p.small{font-size:13px;color:var(--muted)}
+  .k{font-family:var(--mono);font-size:.88em;background:#EAE7DC;padding:1px 4px;border-radius:2px}
+  table{width:100%;border-collapse:collapse;margin:14px 0 6px;font-size:12.5px;background:#fff;border:1px solid var(--line)}
+  th{text-align:left;font:9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line-2);background:#FBFAF5;white-space:nowrap}
+  td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:#3A3A31}
+  tr:last-child td{border-bottom:0}
+  td.mono{font-family:var(--mono);font-size:11.5px}
+  .bad{color:var(--red)}
+  .good{color:#3F6B00}
+  .quote{border-left:3px solid var(--ink);padding:2px 0 2px 16px;margin:14px 0 20px;font-size:16px;color:#2A2A22}
+  .quote b{background:linear-gradient(transparent 60%,var(--lime) 60%)}
+  .devgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}
+  .devcard{background:#fff;border:1px solid var(--line)}
+  .devcard img{width:100%;display:block;border-bottom:1px solid var(--line);background:#fff}
+  .devcard .cap{padding:9px 11px}
+  .devcard .cap .t{font-size:12px;font-weight:650;display:flex;gap:7px;align-items:center}
+  .devcard .cap .t i{font:9px/1 var(--mono);color:var(--olive);font-style:normal;border:1px solid var(--line-2);padding:2px 4px}
+  .devcard .cap p{font-size:11px;color:var(--muted);margin:4px 0 0;line-height:1.55}
+  .wide{background:#fff;border:1px solid var(--line);margin-top:18px}
+  .wide img{width:auto;max-width:100%;display:block;margin:0 auto;border-bottom:1px solid var(--line)}
+  .wide .cap{padding:10px 12px}
+  .wide .cap .t{font-size:12px;font-weight:650}
+  .wide .cap p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
+  .callout{background:#fff;border-left:3px solid var(--red);padding:12px 16px;margin:16px 0;font-size:13px;color:#3E3E34}
+  .callout b{font-weight:650}
+  .confirm{background:var(--ink);color:#EDEAE0;padding:24px 26px;margin-top:22px}
+  .confirm h3{color:#fff;margin:0 0 10px;font-size:16px}
+  .confirm p{color:#B9B6A8;font-size:13px}
+  .confirm ol{margin:12px 0 0;padding-left:18px;color:#DAD7CB;font-size:13px;line-height:1.9}
+  .confirm b{color:var(--lime)}
+  .confirm .k{background:#2C2C23;color:#E7E4D6}
+  footer{margin-top:52px;border-top:1px solid var(--line-2);padding-top:14px;font:10.5px/1.8 var(--mono);color:var(--muted)}
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;padding:0 20px}
+    nav{display:none}
+    h1{font-size:28px}
+    .devgrid{grid-template-columns:1fr}
+  }
+</style></head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="mk"><i>S</i><span>SUPERFW · REAL</span></div>
+    <a href="#own" class="on"><b>00</b>先认账</a>
+    <a href="#asis"><b>01</b>它真实的样子</a>
+    <a href="#data"><b>02</b>真实数据清单</a>
+    <a href="#proposal"><b>03</b>只改真实的东西</a>
+    <a href="#cost"><b>04</b>代价</a>
+    <a href="#next"><b>05</b>下一步</a>
+    <div class="foot">修正版 v0.1<br>2026-10-17<br>基于 superfw@1c9ff09</div>
+  </nav>
+
+  <main>
+    <div class="eyebrow">Grounded rewrite</div>
+    <h1>先画出<em>它真实的样子</em>，再谈改什么。</h1>
+    <p class="lede">你的判断是对的：之前那些界面里，很多东西固件里根本不存在。这一版全部按 <span class="k">src/menu.c</span> 的绘制代码逐行复原——包括真实的图标、真实的行高、真实的版本号——然后再给出三个<b>只动真实数据</b>的提案。</p>
+
+    <div style="border:1px solid #C6E39A;background:#F1FBDC;padding:10px 14px;margin:18px 0 0;font-size:12.5px;color:#3F5300;line-height:1.6">
+      <b>已实现：</b>可直接打开 <a href="../theme-editor.html" style="color:#3F5300;border-bottom:1px solid #C6E39A">theme-editor.html</a> 试用——6 个槽位实时预览，导出 theme.txt 或可直接粘进 menu.c 的 C 片段。
+    </div>
+    <section id="own">
+      <div class="sec-h"><div class="num">00</div><h2>先认账：我编了什么</h2><div class="tag">逐条对照源码</div></div>
+      <div class="quote">"很多工具实际固件都没有。"<br><b>对。下面这些是我编的，不是它的样子。</b></div>
+
+      <table>
+        <tr><th>我写的</th><th>代码里实际是</th><th>性质</th></tr>
+        <tr><td>固件 1.6.2 / 1.4 / 1.5 三条线</td><td class="mono">VERSION_WORD = 0x15 → 版本 0.21</td><td class="bad">版本号整体虚构</td></tr>
+        <tr><td>7 个语义角色（Surface/Accent…）</td><td class="mono">themes[] 只有 6 个字段：fg / bg / ft / hi / hi_blend / sh</td><td class="bad">多编了一个角色</td></tr>
+        <tr><td>调色板 14/16 槽位、ΔE、体积预算</td><td>主题只写 4+4 个调色板槽，不涉及 OBJ 槽位分配</td><td class="bad">整套指标虚构</td></tr>
+        <tr><td>theme.bin / /.superfw/themes/</td><td>不存在。固件不读取任何主题文件</td><td class="bad">文件格式虚构</td></tr>
+        <tr><td>首页 / 继续游玩 / 2 天前 / 存档 3</td><td>没有首页；recent 只存路径与 NOR 标志，无时间戳、无存档计数</td><td class="bad">页面与数据虚构</td></tr>
+        <tr><td>SD 剩余 6.2G</td><td class="mono">t_card_info 只有总容量 block_cnt，没有空闲空间</td><td class="bad">数据不存在</td></tr>
+        <tr><td>5 个场所竖栏 / START 命令面板 / 排序 / 视图 / 搜索</td><td>7 个顶部标签；浏览器只有 A/B/方向键/SELECT，没有排序、视图、搜索</td><td class="bad">导航与功能虚构</td></tr>
+        <tr><td>24px 双行列表、游戏码、封面图</td><td>只有一种 8×16 字体，行高 16px；游戏码只在载入弹窗里读，不进列表</td><td class="bad">布局能力虚构</td></tr>
+        <tr><td>兼容矩阵（1.4/1.5/1.6）</td><td>没有这条版本线，也没有多版本主题格式</td><td class="bad">整页虚构</td></tr>
+      </table>
+
+      <div class="callout"><b>根因不只是"想多了"：</b>我把「主题工具能改什么」和「固件 UI 长什么样」混在一起讲了。前者可以设想，后者必须来自代码。这一版把两者分开：<b>01/02 节只有代码事实，03 节才是提案，并且每个提案都标了改动落点。</b></div>
+    </section>
+
+    <section id="asis">
+      <div class="sec-h"><div class="num">01</div><h2>它真实的样子</h2><div class="tag">240×160 · 4× 复原</div></div>
+      <p class="small">以下六屏按 <span class="k">menu.c</span> 的坐标逐行还原：16px 顶栏（7 个 16×16 图标）、8 行 × 16px 列表、16px 路径栏；设置页 5 行 × 20px，保存按钮 132–152。图标直接取自 <span class="k">res/icons.png</span>（17 个 16×16），Logo 取自 <span class="k">res/logo.png</span>，配色是默认的 themes[0]「White」。</p>
+
+      <div class="devgrid">
+        <div class="devcard"><img src="../design/preview/2browser.png" alt="browser"><div class="cap"><div class="t"><i>01</i>文件浏览</div><p><span class="k">render_browser</span>：8 行，行高 16，图标 x=2，文件名 x=20，大小右对齐 x=238；顶部右侧是 <span class="k">12/41</span>，底部是当前路径。</p></div></div>
+        <div class="devcard"><img src="../design/preview/2uisettings.png" alt="ui settings"><div class="cap"><div class="t"><i>02</i>界面设置</div><p><span class="k">render_ui_settings</span>：5 行 × 20px，值居中在 x=170。主题就是这一行 <span class="k">&lt; 1 &gt;</span>——只有序号，没有名字和预览。</p></div></div>
+        <div class="devcard"><img src="../design/preview/2loadinfo.png" alt="load info"><div class="cap"><div class="t"><i>03</i>载入弹窗 · ROM 信息</div><p>真正的「详情页」：文件名、GameID、存档类型。三页（信息/载入设置/补丁设置）靠 L/R 切换。</p></div></div>
+        <div class="devcard"><img src="../design/preview/2loadpatch.png" alt="patch"><div class="cap"><div class="t"><i>04</i>载入弹窗 · 补丁设置</div><p>四行选项 + 一个补丁策略按钮 + 底部动态帮助文字。这些字段真实存在，但藏在一个弹窗的第二页里。</p></div></div>
+        <div class="devcard"><img src="../design/preview/2tools.png" alt="tools"><div class="cap"><div class="t"><i>05</i>工具</div><p>6 项，22px 行距，只有文字和左侧游标，没有图标、没有说明。</p></div></div>
+        <div class="devcard"><img src="../design/preview/2info.png" alt="info"><div class="cap"><div class="t"><i>06</i>关于</div><p>真实 Logo、作者、版本（0.21）、构建 flavour（SD / Lite / Chis）。上下键在 4 个信息页之间切换。</p></div></div>
+      </div>
+
+      <p class="small" style="margin-top:14px">这六屏没有任何一格是我"设计"的，全部来自代码：坐标、行高、字号、图标索引都能对上 <span class="k">menu.c</span> 里的调用。差异只在于字体用了系统等宽字体近似 8×16 点阵。</p>
+    </section>
+
+    <section id="data">
+      <div class="sec-h"><div class="num">02</div><h2>真实数据与动作清单</h2><div class="tag">能用的只有这些</div></div>
+      <p>任何改版只能用下面这些字段和按键。不在表里的，就是需要新写代码或新加存储。</p>
+      <table>
+        <tr><th>类别</th><th>确实存在的</th><th>不存在的</th></tr>
+        <tr><td>文件项</td><td>文件名、大小、目录/隐藏属性、按扩展名猜的图标</td><td>时间戳、游戏名、封面、评分、游玩时长</td></tr>
+        <tr><td>最近记录</td><td>路径、是否 NOR（<span class="k">t_rentry</span> 只有 3 个字段）</td><td>时间、次数、存档数量</td></tr>
+        <tr><td>ROM 信息</td><td>GameID（4 字符）、版本字节、存档类型与大小（来自补丁库）</td><td>出版商、年份、类型、ROM 内部标题之外的一切</td></tr>
+        <tr><td>补丁</td><td>策略（库/引擎/不补/自动）、直存、游戏内菜单、RTC</td><td>补丁版本号、兼容性评分</td></tr>
+        <tr><td>SD 卡</td><td>容量、厂商、OEM、产品名、SDHC、生产年月</td><td>剩余空间、读写速度实测值（仅工具有 benchmark）</td></tr>
+        <tr><td>按键</td><td>方向键、A、B、L、R、SELECT；START 在浏览器里未绑定</td><td>排序、视图切换、搜索、长按</td></tr>
+        <tr><td>主题</td><td>6 组内置配色（每组 6 个值），序号 1–6</td><td>主题名、自定义颜色、主题文件</td></tr>
+      </table>
+    </section>
+
+    <section id="proposal">
+      <div class="sec-h"><div class="num">03</div><h2>只改真实的东西：三个提案</h2><div class="tag">零新增数据 → 一个 12 字节文件</div></div>
+
+      <h3>P1 · 主题选择器：把 6 个序号变成 6 张预览</h3>
+      <p>现有的 <span class="k">themes[]</span> 就躺在 ROM 里，6 组颜色在运行时都能拿到。不需要新数据，只需要一个新的渲染函数：3×2 网格，每格画出用该配色渲染的迷你界面 + 6 色条。选中项加黑框，A 确认，B 取消。</p>
+      <div class="wide"><img src="../design/preview/30-theme-picker.png" alt="theme picker"><div class="cap"><div class="t">提案 P1 · 主题选择器（240×160）</div><p>6 个格子用的就是 themes[0..5] 的真实色值；小屏里的顶栏、文字、选中条就是该主题下的实际观感。</p></div></div>
+
+      <h3>P2 · 把三页弹窗合并成一页</h3>
+      <p>载入弹窗现在分三页（信息 / 载入设置 / 补丁设置），要按 L/R 来回切。字段其实只有 7 个：文件名、GameID、存档类型、补丁策略、直存、IGM、RTC。一屏 16px 行足够放下，主操作固定在底部。</p>
+      <div class="wide"><img src="../design/preview/31-detail.png" alt="detail"><div class="cap"><div class="t">提案 P2 · 合并后的详情页（240×160）</div><p>没有新增字段，只是把已经读进 <span class="k">t_load_gba_info</span> 的东西一次摆出来。少两次翻页。</p></div></div>
+
+      <h3>P3 · 让主题真的可改：theme.txt（6 行，12 字节）</h3>
+      <p>这是"主题修改器"能做到的最小真实版本：固件启动时读 <span class="k">/.superfw/theme.txt</span>，把 6 个十六进制值写进同一组调色板槽，主题选择里多出第 7 项 <b>Custom</b>。网页端只负责改这 6 个值和预览，不假装能改布局。</p>
+      <div class="wide"><img src="../design/preview/32-editor.png" alt="editor"><div class="cap"><div class="t">提案 P3 · 六色编辑器 + 真实预览（1440×900）</div><p>左边就是 themes[] 的 6 个字段，中间是用真实布局渲染的预览，右边是导出的 6 行文本。没有语义角色、没有槽位预算、没有兼容矩阵。</p></div></div>
+    </section>
+
+    <section id="cost">
+      <div class="sec-h"><div class="num">04</div><h2>代价</h2><div class="tag">按行数算，不按感觉</div></div>
+      <table>
+        <tr><th>提案</th><th>新增数据</th><th>固件改动</th><th>网页改动</th><th>风险</th></tr>
+        <tr><td>P1 主题选择器</td><td>无</td><td>约 60 行渲染 + 15 行按键</td><td>无</td><td><span class="good">低</span></td></tr>
+        <tr><td>P2 合并详情页</td><td>无</td><td>约 80 行（替换 3 个 render）</td><td>无</td><td><span class="good">低</span></td></tr>
+        <tr><td>P3 theme.txt</td><td>6 × 2 字节</td><td>约 40 行读取 + 20 行接入</td><td>6 个色值输入 + 预览</td><td><span class="good">低</span>（失败回退出厂）</td></tr>
+        <tr><td>上一版的布局运行时</td><td>1.2 KB 描述</td><td>3 KB 运行时 + 重写全部 render</td><td>整套结构编辑器</td><td class="bad">高（内存/帧率/兼容）</td></tr>
+      </table>
+      <p class="small">前三项加起来不到 220 行 C，不动渲染管线，不引入新格式解析器。最后一行是上一版提的方案——它仍然可行，但那是另一个项目，不该混在"主题修改器"里卖。</p>
+    </section>
+
+    <section id="next">
+      <div class="sec-h"><div class="num">05</div><h2>下一步</h2><div class="tag">选一个，我直接写</div></div>
+      <div class="confirm">
+        <h3>三个都能落地，建议一起做 P1+P3</h3>
+        <p>P1 让"选主题"这件事第一次有预览；P3 让"改主题"第一次成立。两者共用同一套调色板写入口，加起来约 135 行 C + 一个单页网页。</p>
+        <ol>
+          <li><b>P1 + P3</b>：主题选择器 + theme.txt 读取 + 网页导出。<b>推荐</b>，一次把"选"和"改"补齐。</li>
+          <li><b>只做 P3</b>：先让自定义配色跑通，选择器还是老样子（<span class="k">&lt; 7 &gt;</span>）。</li>
+          <li><b>先做 P2</b>：不动主题，先把三页弹窗合成一页，验证"改布局"的手感。</li>
+        </ol>
+      </div>
+      <footer>本页所有界面坐标来自 src/menu.c（render_browser / render_ui_settings / render_gba_load_popup / render_gbarom_info / render_tools / render_info），图标与 Logo 取自 res/，版本号取自 Makefile 的 VERSION_WORD = 0x15。</footer>
+    </section>
+  </main>
+</div>
+</body></html>

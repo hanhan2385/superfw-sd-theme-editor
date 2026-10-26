@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>Settings</title><link rel="stylesheet" href="device.css">
+<style>
+  .cats{width:56px}
+  .opts{left:96px;padding:4px 6px 0 6px}
+  .opt{height:22px;font-size:6.2px}
+  .opt .k{width:60px;flex:none;color:#CFE7EB}
+  .opt .v{margin-left:auto;color:#8FB3BB}
+  .opt.on .k{color:#fff}
+  .arrows{font:5px/1 Consolas,monospace;color:#3E6470;margin-left:2px}
+</style></head>
+<body>
+<div class="dev"><div class="screen">
+
+  <div class="rail">
+    <div class="brand"><b>SF</b></div>
+    <div class="ritem"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4z"/><path d="M9 20v-6h6v6"/></svg><span>首页</span></div>
+    <div class="ritem"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 9h18M9 9v11"/></svg><span>游戏</span></div>
+    <div class="ritem"><svg viewBox="0 0 24 24"><path d="M14 6a4 4 0 0 0-4 6l-6 6 2 2 6-6a4 4 0 0 0 6-4l-3 1-2-2z"/></svg><span>工具</span></div>
+    <div class="ritem on"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg><span>设置</span></div>
+    <div class="ritem"><svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg><span>系统</span></div>
+  </div>
+
+  <div class="cats">
+    <div class="cat on">显示</div>
+    <div class="cat">启动</div>
+    <div class="cat">存档</div>
+    <div class="cat">补丁</div>
+    <div class="cat">系统</div>
+  </div>
+
+  <div class="opts">
+    <div class="opt on"><span class="k">主题</span><span class="v">Aurora</span><span class="arrows">‹ ›</span></div>
+    <div class="opt"><span class="k">动画速度</span><span class="v">48 px/s</span><span class="arrows">‹ ›</span></div>
+    <div class="opt"><span class="k">行密度</span><span class="v">舒适</span><span class="arrows">‹ ›</span></div>
+    <div class="opt"><span class="k">图标着色</span><span class="sw on"><i></i></span></div>
+    <div class="opt"><span class="k">最近菜单</span><span class="sw on"><i></i></span></div>
+    <div class="opt"><span class="k">隐藏文件</span><span class="sw"><i></i></span></div>
+  </div>
+
+  <div class="hint">
+    <span><b>‹ ›</b> 修改</span><span><b>B</b> 返回</span><span><b>L/R</b> 分类</span>
+    <span class="r">显示 1 / 5</span>
+  </div>
+
+</div></div>
+</body></html>

@@ -1,0 +1,51 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ---- 虚拟环境 ----
+.venv*/
+.unicorn/
+
+# ---- ARM 工具链（2.3G，按 README 自己装，不进仓库）----
+.toolchain/
+
+# ---- 构建产物 ----
+build/
+dist_new/
+out/
+fw/*.elf
+fw/*.map
+fw/*.gba
+fw/*.payload
+fw/*.bin
+
+# ---- 原始固件副本与上游参考源码（授权/体积原因不进仓库）----
+in/
+ref/
+
+# ---- 历史归档 ----
+archive/
+.backup/
+
+# ---- 发布包走 GitHub Releases，不进 git ----
+dist/
+
+# ---- 编辑器与系统 ----
+.workbuddy/
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+*.swp
+
+# 临时 GitHub token（用完删掉）
+.gh_token
+
+# 构建信息（编译固件/打包 exe 时自动生成）
+fw/build_meta.txt
+app/build_info.py
+
+# 打包/解压残留（PyInstaller 临时目录等）
+tmp*/
+sfw_motw_*/
