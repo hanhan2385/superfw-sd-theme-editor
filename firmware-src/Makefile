@@ -1,6 +1,6 @@
 
 VERSION_WORD := 0x00000015
-VERSION_SLUG_WORD ?= 78000001
+VERSION_SLUG_WORD ?= 79000004
 # 构建日期：关于页第 3 行会显示成「Chis SDT 2026-10-21」，
 # 用来和官方 r75 发布件区分 —— 那边这一行是「Chis variant」，版本号又是同一个
 # 75000001，不靠这行字在机器上根本看不出刷的是哪个。
@@ -175,6 +175,7 @@ INFILES=src/gba_ewram_crt0.S \
         src/menu_overlay_profile.c \
         src/save.c \
         src/patchengine.c \
+        src/webpatch.c \
         src/irqpatch.c \
         src/patcher.c \
         src/romcompat.c \

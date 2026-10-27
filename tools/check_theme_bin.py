@@ -3,7 +3,7 @@
 """theme.bin 体检 —— 结构、版本、flags 自洽性、与固件常量的一致性。
 
 用法:
-    python tools/check_theme_bin.py dist/v0.31/theme.bin
+    python tools/check_theme_bin.py theme.bin
     python tools/check_theme_bin.py theme.bin --fw out/firmware.fw
 
 头布局（两侧必须一致）:

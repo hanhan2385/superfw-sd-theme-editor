@@ -80,11 +80,22 @@ bool sdtheme_render_wall(volatile uint8_t *frame);
 // 把壁纸铺到任意目标的前 144 行（240x144），不读卡。
 // 载入进度画面用它 —— 那时 SD 卡正在读游戏 ROM，不能再去读主题文件。
 // 缓存不可用（没壁纸 / 被生成补丁踩过 / 落在 ROM 载入区）时返回 false。
-bool sdtheme_render_wall_at(volatile uint8_t *dst);
+bool sdtheme_blit_wall_early(volatile uint8_t *dst);
 
-// 缓存所在的 SDRAM 被别的功能踩了（写 NOR / 生成补丁会占满 hiscratch 和
-// 写入 scratch），把缓存标记成失效；下一次 sdtheme_poll() 会重读当前套。
+// 把壁纸铺进**两个**帧缓冲（载入画面 / 写 NOR 画面共用那一屏）。
+// 必须在缓存被覆盖之前调 —— 写 NOR 会把整块 2MB scratch 当 ROM 中转区。
+// 已经铺过就直接返回 true（`done == 0` 的刷新不会重复读缓存）。
+bool sdtheme_arm_loadbg(void);
+bool sdtheme_loadbg_armed(void);
+
+// 缓存所在的 SDRAM 被别的功能踩了（写 NOR / 写固件会占满那两块 scratch），
+// 把缓存标记成失效；下一次 sdtheme_poll() 会重读当前套。
 void sdtheme_invalidate(void);
+
+// 只是「扫描窗 / 工具代码占了 hiscratch」时的失效判断：
+// 缓存落在 0x081F0000 时根本碰不到，不该白丢一次壁纸 ——
+// 以前无条件标脏，导致「第一次载入要扫补丁的 ROM，载入画面是纯色」。
+void sdtheme_invalidate_scan(void);
 
 // 每帧调用：缓存失效且当前套确实需要壁纸时，重读一次。
 // 只在 invalidate() 之后真正干活，平时就是一个 if。

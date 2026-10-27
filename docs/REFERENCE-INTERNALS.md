@@ -120,10 +120,13 @@
 - 发布 `tools/package_release.py`（`--with-firmware` 才带固件）。截图 `shot_sdedit_pw.py --theme <临时 theme.bin> --slot 3`。
   校验别用 `raw.githubusercontent.com`（超时），走 `gh api -H "Accept: ...raw"`。
 - 体检 `app/fwcheck.check()`。`find_baked()['b_rom']` 不是位图 B 起点，真数据在 `data_b_at`。
-- **目录**：最新 `dist/v0.31/`，**9 个文件 / 29 MB** —— 根上 4 项：`SuperFW-SD-Theme-Editor-v0.31.exe`
-  （onefile 21.6 MB，**不依赖 `_internal`、不读系统 TEMP**，解压到 `E:\SuperFW-Cache`）、`theme.bin`、
-  `快速上手.md`、`SHA256SUMS.txt`；加 `文档/`、`固件/`（4 个）。**「备用-免解压版」已取消**。
-  `v0.19`..`v0.30` 在 `archive/2026-10-22/releases/`。
+- **目录**：最新 `dist/v0.32/`，**10 个文件 / 50 MB** —— 根上 7 项：`SuperFW-SD-Theme-Editor-v0.32.exe`
+  （onefile 21.6 MB，**不依赖 `_internal`、不读系统 TEMP**，运行时解压到
+  `%LOCALAPPDATA%\SuperFW-Theme-Editor`）、同名整包 `.zip`、`读我.txt`、`RELEASE-NOTES.md` / `.en.md`、
+  `GIT-发布材料.md`、`SuperFW-Chis-SDTheme-src.zip`、`SHA256SUMS.txt`；子目录 `固件/`
+  （`.fw` / `-2m.bin` / `读我.txt`）。**「备用-免解压版」已取消**。
+  上一版 `v0.31` 在 `archive/2026-10-26/releases/v0.31/`（清单过期，7/12）；
+  `v0.19`..`v0.29` 在 `archive/2026-10-22/releases/`，`v0.30` 与内部 0.32~0.48 在 `archive/2026-10-26/releases/`。
   版本号只改 `app/sdedit_ver.py` 的 `APP_VER`；`tools/check_version.py` 查漏。
   **`tools/cleanup_project.py` 是 v0.21 规则，早已过时**，别直接 `--apply`。`.toolchain/` 2.3G 不能删。
 - **救命设施 `.workbuddy/file-history/<sessionId>/<hash>@vN`** 存 Edit/Write **之前**的快照；python 脚本直接改的不生成。
@@ -144,6 +147,17 @@
   关于页 `Chis SDT 2026-10-21`，1,969,664 B。
 - **r78 已适配未发布**：`archive/2026-10-22/out/r78-theme-2026-10-22/`（`0x78000001`、1,970,176 B、
   恢复内置 Hack 1428 条、修 v6 Logo 尾段 259 B 按 4 字节 DMA 丢 3 字节色、缓存 `0x081F0000`）。**完整实机验收没做**。
+- **r79 已合并（2026-10-27，v0.32 起）**：`0x79000004`、`Chis SDT 2026-10-27`、**2,008,064 B**
+  （补丁库 1,962 条比 r78 多 219 条，`.fw` 涨了 37.9 KB，2 MiB 槽还剩 89 KB）。只动了 13 个文件、
+  约 209 行；`patchengine.{c,h}`/`patcher.c`/`rtc_custom.{c,h}`/`webpatch.{c,h}`/`res/hackpatches.db`
+  是整份替换，`menu.c`（+34/−16）用 `patch -p1` 打好（偏移 164~770 行，零冲突），`loader.c` 取 r79 后
+  **重新贴回** `sdtheme_arm_loadbg()/sdtheme_invalidate()` 那 8 行。
+- **r79 的坑：`menu_language_work` 从 `.sbss` 挪到了 `.bss`**（上游为省 EWRAM）。本分支
+  `.bss` 落在 **IWRAM**（0x03000000），608 B 一挪进来就 `__IWRAM_END__ = 0x3F08 > 0x3F00`
+  → 链接报 `Not enough free IWRAM for stack`。**必须保留 `__attribute__((section(".sbss")))`**，
+  改完 `.bss` 10,248 + `.iwram` 5,864 → 余 600 B；EWRAM 244,152 / 257,024（余 12.8 KB）。
+- **r79 新增 `patchengine_select_save_reference()` 是 `IWRAM_CODE`**，这是 IWRAM 变紧的主因；
+  再往上加 IWRAM 代码前先看 `firmware.ewram.map` 的 `.iwram` 段。
 - **校验 `SHA256SUMS.txt` 要用 `encoding="utf-8-sig"`** —— r78 那份首行有 BOM，按 utf-8 读必然误报"不符"。
 - 上游 moribaka/superfw-fix r75（master `8dd68502`）chis 定制：菜单压缩重写 / SNES / 软件 RTC / 中文 hack /
   放宽 ROM 头 / ROM 库 1742 条。**源码编译**，非烘焙。构建 `bash ref/superfw-fix/build_chis.sh [SDTHEME_DIAG=1]`；
@@ -172,3 +186,114 @@
   `subprocess.Popen(stdout=DEVNULL, stderr=DEVNULL, stdin=DEVNULL)` + 枚举窗口标题。
   **后果**：exe 若以 `dist/` 为 CWD 启动，搜狗输入法会在那儿落一个 `debug.log`，发布前要删。
 - 「改名→测试→改回」这类验证，还原那步用 `mv`（exe 刚被 kill 句柄未释放，`os.rename` 会失败）。
+
+## 9. theme.bin v7 / v8 尾巴，与壁纸铺满（2026-10-23 ~ 10-26）
+
+- **v7 尾巴 = 271 B** = v6 的 259 + 6 套 ×2 B 透明度 `[底栏, 选中条]`（0..16）。全 0 时不写、仍发 v5/v6；
+  写了 v7 老固件会**整份跳过** → 顺序必须「先刷固件、再放 theme.bin」。带 v7 尾巴时**必须连 logo 一起写**
+  （固件看 `b[8] >= 6` 就读 logo 段，没设就用 `builtin_logo()` 兜底）。
+- **v8 尾巴 = 1,993 B** = v7 的 271 + 纹理 6×287。每套 287 = 色数(1) + 15×RGB555(30) + 16×16 tile(256)。
+  像素 0 = 自动色（= 本套 `hi_blend`，写到 OBJ 调色板 240 号），1..n → 241..255；图标只用 0..37
+  （`SDT_ICON_PALN=38`），240..255 本来空着，**不占一点显存**。
+  tile 全部实色、**没有透明**（透明露壁纸会糊字）；横向只能 16 px 周期（63 号精灵铺 15 次），
+  纵向 16 行可任意画（渐变/高光/描边都行）。六套都没纹理就不写，文件逐字节等于老版本。
+- 写 v8 时 `alpha_rows` 要**先用全 0 兜底再累加 size**，否则少 12 B 直接读不出来。
+- **壁纸一律铺满 240×144 存（v0.39 起，方案 A）**：v0.36「压进可见行」与 v0.38「开透明自动展开 /
+  关掉压回」都已删除 —— 那会改图，拖个滑块壁纸就跳。原图 320×192 也是 5:3，**铺满才是原比例**。
+  旧文件靠 **flags bit14（`FLAG_FULL_WALL=0x4000`）** 区分：没这一位就 `expand_squashed_wall()` 展开一次，
+  存过就带位、不再展开（否则越开越糊）。底栏透明度 > 0 时自动铺满属于派生行为，不是给用户的开关。
+
+### 载入 / 写 NOR 那一屏（2026-10-26，v0.32 ~ v0.33）
+
+同一个函数 `loadrom_progress()`，五个入口共用：载入 GBA 游戏、**写 NOR**、扫补丁、
+载模拟器、SDRAM 自检 / 测速。所以改这一屏 = 全改。
+
+- **壁纸只铺一次**：`done == 0` 的第一帧把图铺进两个帧缓冲，之后每帧只重画进度条。
+  缓存（`0x081F0000`）在 ROM 载入区内，读到一半就被盖，绝不能再回读。
+- **写 NOR 要先 arm 再标脏**：`flash_gba_nor()` 开头 `sdtheme_arm_loadbg()` →
+  `sdtheme_invalidate()`。顺序反了就是纯色（以前一直是纯色）。
+- **扫补丁不再无条件标脏**：扫描窗只有 1 MB（`0x09000000..0x09100000` + 20 KB 尾表），
+  用 `sdtheme_invalidate_scan()` 判断，只有缓存真落在 `>= 0x09000000` 才失效。
+  以前无条件标脏 → 第一次载入要扫补丁的 ROM 时载入画面是纯色。
+- **置灰项兜底**（`SDT_SH_MIN_DELTA=30`）：`reload_theme()` 里比 SH 与 BG 的加权亮度差，
+  太小就换成 `mix555(FT, BG, 7)`。用户那套 SH == BG，游戏内菜单「时钟模拟/金手指」直接隐形。
+
+## 10. 内置字体（`res/fonts-ext.pack`）
+
+- **字体别放 SD 卡**（2026-10-23 实测打回）：690 KB 走 SuperCard 接口要近 1 秒，每次开机都卡在那儿；
+  内置包走 `sdram_copy` 只要几十 ms。且 `.org 0x00190000` 锚死镜像尾部 →
+  **字体放哪 `.fw` 都是 1,969,664 B**（r78 为 1,970,176），「省体积」这个好处根本不存在。
+- 现用包 = **983,948 B / 17 块 = 文泉驿 10pt**（`Electr0Whale/superfw` `v0.20-wqy10pt-r8`）；
+  官方 davidgf v0.21 原版 1,047,800 B / 7 块 = unscii + Unifont（2026-10-26 二进制确认）。内嵌 ASCII 表同换。
+- 现状：`rom_boot.S` incbin fonts-ext，`fontload_builtin_covers()` 恒 true（`fontload_load_lang()` 直接返回、
+  不读卡）；SD 加载代码留着备用。
+- **格式**：`FLAG_FW16=1`（16 列，32 B/字）、**`FLAG_FW12=2`（12 列定宽，24 B/字 = 12×uint16，
+  位 j = 第 j 行）**、`FLAG_COMP=0x80000000`（韩文合成）。**变宽块索引 = 4 位宽 + 12 位偏移**
+  （`>>12` / `&0xFFF`），不再是 3 位 + 13 位。`font_menu_subset_copy()` 编码同一位置，改一处必须同步另一处。
+- **缺字 = 屏幕上的黑斑**：文泉驿包没有 U+2BC5 ⯅ / 2BC6 ⯆ / 2BC7 ⯇ / 2BC8 ⯈（Unicode 后加的中黑三角）。
+  `font_render.c:62` 的 `#define MISSING_CHAR 26`（'?'）兜底，深色主题下看着就是黑斑。
+  **改任何文案前跑 `python tools/check_font_coverage.py`**（扫两条源码线的字符串字面量，退出码 1 = 有缺字）。
+  判定缺字**必须用 `gbafont._parse_pack()`** 读完整 pack（41,217 字）；不能用 `gbafont.load()` ——
+  开发环境它优先用 `uifont_data.GLYPHS` 预览子集，汉字会全报缺。
+  可用箭头：`▲▼▴▾◀▶◂▸«»‹›`（U+25B2/25BC/25B4/25BE/25C0/25B6/25C2/25B8）。
+
+## 11. 32MiB ROM 的紧凑版游戏内菜单（`COMPACT_INGAME_MENU`）
+
+- 完整菜单 `menu_rsize=213,052` + 字体在 32MiB ROM 尾部放不下 → `loader.c:122` 无 hole 时自动降级到
+  90,368 B 的紧凑版。一次显示 4/6 项，`1-4/6` 是**范围**不是只剩 4 项；按下滚到 `3-6/6`（RTC/金手指）。
+  无底 / 无 logo 是设计（只画 10 KiB OBJ 单色图块）。「保存」灰 = `savefile_pattern[0]==0`
+  （DirectSave/Disable 启动都这样；DirectSave 不需要手动回写）。2026-10-26 实机截图确认，**不是 v0.31 回归**。
+- 灰项原用隔像素抖动（LCD 上像重影）→ 改实色灰：`compact_pixel` 写 4bit、`compact_video_init` 设
+  `MEM_PALETTE[256+2]=0x4A52`、`compact_text` 的 disabled 分支画实色 2。只影响紧凑版。
+  已实机确认，`archive/2026-10-26/releases/v0.31/固件/` 用的是 `ab4c199a…`（2m `dc653c…`），测试包在
+  `archive/2026-10-26/compact-fix-test/`。
+
+## 12. 选中条 HIB 的真相与纹理（`fw/src/menu.c`）
+
+- 63 号 OBJ 精灵是 **16×16 8bpp**（attr0=shape0、attr1 bit14=size1；
+  `dma_memset16(&MEM_VRAM_OBJS[63*256], dup8(255), 128)` = 256 字节），
+  `for (i = 0; i < 240; i += 16) render_icon_trans(i, y, 63)` → **横向 15 个铺满，纵向只有一行**。
+  tile 里 256 像素全填索引 255，调色板 `MEM_PALETTE[256+255] = themes[].hi_blend` → 只有一个颜色。
+- `render_icon_trans` 写 OAM 时 `y|0x0400`（attr0 bits10-11=01）= **本来就设成半透明**；
+  `REG_BLDALPHA=0x0808`(50%) 也有，但 `REG_BLDCNT=0x1F40` **第一目标位全 0 → 混合没启用**，看起来是实心。
+  **改 `0x1F40 → 0x0450`（第一目标 OBJ bit4 + 第二目标 BG2 bit10 + mode1 bit6）就真半透明，不动格式**。
+- **图案背景**：把 256 字节换成 16×16 索引图即可（索引 0 在 OBJ 调色板恒透明 → 露出壁纸，硬边不是混合）。
+  每套 +258 B（tile 256 + 2 色），6 套 1.5 KB。**只有「点阵」「45° 斜纹」不毁字**，棋盘格 / 网格 /
+  双色斜纹会让文件名读不出来。
+- **OBJ 显存已占满**：`MEM_VRAM_OBJS=0x06014000`，Mode 4 下 16KB，64 图标 ×256 B = 16,384 → 一字节不剩，
+  所以「15 块不同 tile 拼一条 240×16」放不下。要整条渐变/高光必须**直接写 BG 帧缓冲**
+  （240×16=3,840 B，DMA 一次，先画条再画字），半透明也改 CPU 混合、不依赖 `REG_BLDCNT`。
+- 预览脚本：`out/mock_tile.py`（16×16 图案）/ `out/mock_tile_zoom.py`（放大）/ `out/mock_bar.py`（整条渐变 6 种）。
+
+## 13. mGBA 模拟器测试平台（2026-10-24）
+
+- `dist/emu/SuperFW-emu-noSD.gba` = EMU_BUILD 固件，内置假 SD（FAT12 内存盘、空目录），mGBA 直接跑。
+  **只能模拟器用，不能刷真机**。
+- 工具：`tools/setup_mgba.py`（下载+解压，只需一次）、`tools/emu_shot.py`
+  （`--gui` 手动玩 / `-o x.png` 截图 / `--tour 5 --step "R:8,0:110"` 连拍全页面）。
+- mGBA 在 `.toolchain/mgba/extracted/mGBA-build-*/mGBA.exe`（S3 镜像下载，GitHub 502）。
+- 编译：`bash ref/superfw-fix/build_chis.sh VERSION_SLUG_WORD=75000001 FL_TAG=EMU EMU_BUILD=1`
+  （EMU 改动全在 `#ifdef EMU_BUILD`：diskio.c 内存盘、supercard_driver.c 假 init、
+  menu.c `emu_key_script[]` 脚本按键 —— 数组必须 volatile，否则 LTO 删）。
+- **铁律**：①ARM 上 `*(u16*)&buf[k]`（k 为奇）错位一字节，BPB/寄存器布局必须显式字节写；
+  ②FatFs 要求 TotSec16 ≥ 128；③脚本必须等固件起来再经 GDB 写（.bss 清零会抹）；
+  ④GDB `M` 包数据是十六进制文本；⑤改编译开关必须 touch 源文件。
+- 无 theme.bin 时选中行显示「无壁纸兜底整行实色」；竖条选中要真机或塞 theme.bin 验证。
+
+## 14. 编辑器界面约定（用户拍定的口径）
+
+- **术语只有一个说法：整套图**（六套里某一套、7 个页面共用的那张）。别再混用「默认图 / 主题图 /
+  跟随主题」—— 按钮叫「换整套图」，预览标题写「跟随整套图 / 本页单独配图」（v0.41 统一）。
+- **界面文案不许出现内部版本号**（v5/v8/r78 之类）：改成「只认配套的新固件，旧固件会直接忽略这份主题」。
+- **提示不许糊在用户自己的图上**：要说明「这块会被挡」，用一块独立的 1:1 真机小窗（顶栏/底栏画实色块、
+  红框标底栏），别往他图上盖压暗矩形或红线（v0.33 → v0.34 返工）。
+- **调色一律用滑块**（`ColorDialog`，RGB+HSL 联动 + 渐变轨道 + 「机器上」15 位色预览），不要输入框。
+- **壁纸填充只有一种做法**：`compose_fit` 整张压进可见行那种三选一已全部删除（v0.35 的裁/压/留边不许加回）；
+  `state` 只剩 `(s, cx, cy)`。v0.39 起铺满 144 行。
+- **预览上方不要「整套」按钮**（v0.37 用户「很膈应」）→ 整套视图入口只留右上角 `btn_default`。
+- **底栏**：最近 / 界面 / 工具 无底栏，其余统一 **144..159（16 行）** → 安全区 **240×128**；
+  改版式后跑 `tools/test_bar_cover.py`（解析 `menu.c` 的 `dma_memset16(&frame[...])` 比对）。
+- **工具页预览光标用 `▶`**（U+25B6）；`▸` 不在 `uifont_data` 子集里，会回落成 `?`
+  （`tools/make_uifont.py` 的符号清单只强制带了 `◀▶▲▼`）。
+- 编辑器自检 `archive/2026-10-26/out/test_crop_dialog.py`（裁剪框内不许有盖图的矩形 + 真机小窗 +
+  compose_safe）；要跑先搬回 `out/`。

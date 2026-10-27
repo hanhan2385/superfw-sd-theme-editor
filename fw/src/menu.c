@@ -543,15 +543,40 @@ NOINLINE int romsort(const void *a, const void *b) {
   return strcasecmp(&ca->game_name[ca->bnoffset], &cb->game_name[cb->bnoffset]);
 }
 
+/* 载入画面的壁纸只铺一次。
+ *
+ * 缓存在 ROM 载入区里（0x08000000 起），载入过半就被 ROM 数据整块盖掉 ——
+ * 所以不能每帧回缓存取图（那正是 sdtheme_blit_wall_early 以前那道 0x09000000
+ * 守卫想拦的事，而这条线上判据恒成立，等于这段功能从没生效，真机载入画面一直
+ * 是纯色，主题底色是黑的就看着像黑屏）。
+ * 改成：done == 0 的第一帧把两个帧缓冲都铺上，之后每帧只补底部 16 行 + 进度条。
+ * 铺不上（没主题 / 这套没壁纸 / 缓存被生成补丁踩过）就沿用原来的整屏纯色。 */
+static bool loadbg_wall_painted;
+
+static bool paint_loadbg_wall(void) {
+  if (loadbg_wall_painted)
+    return true;
+  /* 写 NOR 那条路会在标脏之前自己先 arm（见 keypress_popup_flash 的 NOR 分支），
+   * 这里直接认。 */
+  if (!sdtheme_loadbg_armed() && !sdtheme_arm_loadbg())
+    return false;
+  // 壁纸只到第 144 行，底下 16 行是界面的固定底色（两个缓冲都要补，免得翻页闪一下）
+  dma_memset16(&MEM_VRAM_U8[SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
+  dma_memset16(&MEM_VRAM_U8[0xA000 + SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
+  loadbg_wall_painted = true;
+  return true;
+}
+
 static void loadrom_progress(unsigned done, unsigned total) {
   // Draws and flips the buffer, do not care about vsync here
   volatile uint8_t *frame = &MEM_VRAM_U8[0xA000*framen];
 
-  // 有 SD 主题壁纸就铺上去。只搬内存里已经缓存好的那份，**不读卡** ——
-  // 这时候 SD 卡正在读游戏 ROM，再去读主题文件只会把加载拖慢。
-  // 拿不到（没配壁纸 / 缓存被生成补丁踩了）就退回纯色。
+  // 每次载入的第一次回调（offset 0）重新铺一次，上一次的壁纸不能复用
+  if (done == 0)
+    loadbg_wall_painted = false;
+
   // 底色和进度条用 EX_PAL_* 这两格：v5 主题可以单独指定，没指定时等于 BG/FG。
-  if (sdtheme_render_wall_at(frame))
+  if (paint_loadbg_wall())
     dma_memset16(&frame[SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
   else
     dma_memset16(&frame[0], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*SCREEN_HEIGHT/2);
@@ -627,7 +652,8 @@ bool generate_patches_progress(const char *fn, unsigned fs) {
 
   // hiscratch（0x09000000..0x09800000）刚被 ROM 数据整块占了 8MB，SD 主题的
   // 缓存在那儿的话现在已经是 ROM 字节了。打个标记，回菜单后 sdtheme_poll() 重读。
-  sdtheme_invalidate();
+  // （缓存落在 0x081F0000 时碰不到，别白丢一次壁纸。）
+  sdtheme_invalidate_scan();
   return cache_ok;
 }
 
@@ -2178,6 +2204,18 @@ static void apply_sel_tile(unsigned thnum) {
     dma_memset16(&MEM_VRAM_OBJS[63 * 256], dup8(SEL_COLOR), 256 / 2);
 }
 
+/* 置灰项（SH）和内容底色的最小亮度差（5 位色加权，满值 47）。
+ * 低于它就当「撞色」，自动换成文字色往底色混 44%。 */
+#define SDT_SH_MIN_DELTA  30
+
+/* 16 分之一精度的 555 混色（主线上没有 v8 那套工具函数，单独放一个）。 */
+static uint16_t mix555_16(uint16_t a, uint16_t b, unsigned k) {
+  unsigned r  = ((a & 31) * (16 - k) + (b & 31) * k) / 16;
+  unsigned g  = (((a >> 5) & 31) * (16 - k) + ((b >> 5) & 31) * k) / 16;
+  unsigned bl = (((a >> 10) & 31) * (16 - k) + ((b >> 10) & 31) * k) / 16;
+  return (uint16_t)(r | (g << 5) | (bl << 10));
+}
+
 void reload_theme(unsigned thnum) {
   // Palette 0..15 contains the main menu template colors
   MEM_PALETTE[FG_COLOR] = themes[thnum].fg_color;
@@ -2190,6 +2228,18 @@ void reload_theme(unsigned thnum) {
   MEM_PALETTE[IGM_PAL_HI] = themes[thnum].ft_color;
   MEM_PALETTE[IGM_PAL_SH] = themes[thnum].sh_color;
   MEM_PALETTE[IGM_PAL_BL] = themes[thnum].hi_blend;
+
+  /* 置灰项（SH）要是和内容底色撞了，游戏内菜单里那几项就是隐形的 ——
+   * 用户那套 SH 和 BG 都是 #383838，只看到 4 项，「时钟模拟/金手指」凭空消失。
+   * 亮度差太小就自动换成「文字色往底色混 44%」：看得出是灰的，又明显比正常项暗。 */
+  {
+    uint16_t sh = themes[thnum].sh_color, bgc = themes[thnum].bg_color;
+    int lsh = 3 * (int)(sh & 31) + 6 * (int)((sh >> 5) & 31) + (int)((sh >> 10) & 31);
+    int lbg = 3 * (int)(bgc & 31) + 6 * (int)((bgc >> 5) & 31) + (int)((bgc >> 10) & 31);
+    int d = lsh > lbg ? lsh - lbg : lbg - lsh;
+    if (d < SDT_SH_MIN_DELTA)
+      MEM_PALETTE[IGM_PAL_SH] = mix555_16(themes[thnum].ft_color, bgc, 7);
+  }
 
   // 整屏界面：默认就跟主色走（和以前一模一样），有 v5 扩展色时下面会覆盖
   MEM_PALETTE[EX_PAL_IGMBG] = themes[thnum].bg_color;
@@ -2837,6 +2887,8 @@ static void keypress_popup_norwrite(unsigned newkeys) {
         flashmgr_allocate_blocks(ne.blkmap, blkcnt, (t_reg_entry*)&sdr_state->nordata);
 
         // Go ahead and start the flasher-loader with patching support.
+        // 进度画面和「载入游戏」共用同一屏，壁纸只在这一刻读得到：先铺进帧缓冲再开写。
+        sdtheme_arm_loadbg();
         unsigned errc = flash_gba_nor(info->romfn, info->romfs, &info->romh, p,
                                       info->use_dsaving, info->ingame_menu_enabled,
                                       info->rtc_patch_enabled,

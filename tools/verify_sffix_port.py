@@ -122,7 +122,7 @@ check(pos(r"sdtheme_save_default\(menu_theme\)") > 0,
       "menu_init：卡上没有 theme.bin 时自动生成默认主题")
 
 reload_body = menu[menu.index("void reload_theme(unsigned thnum)"):
-                   menu.index("void reload_theme(unsigned thnum)") + 1200]
+                   menu.index("void reload_theme(unsigned thnum)") + 2600]
 check("sdtheme_apply_theme(thnum);" in reload_body,
       "reload_theme()：末尾调用 sdtheme_apply_theme(thnum)")
 
@@ -130,26 +130,28 @@ render_body = menu[menu.index("void menu_render(unsigned fcnt)"):
                    menu.index("void menu_render(unsigned fcnt)") + 4000]
 i_poll = render_body.find("sdtheme_poll();")
 i_page = render_body.find("sdtheme_set_page(smenu.menu_tab);")
-i_wall = render_body.find("sdtheme_render_wall(frame);")
+i_wall = render_body.find("sdtheme_render_wall(frame")
 i_blank = render_body.find("dma_memset16(&frame[16*SCREEN_WIDTH]")
 check(0 <= i_poll < i_page, "menu_render()：先 poll 再 set_page", f"{i_poll} / {i_page}")
-check("if (sdtheme_wall_enabled())" in render_body and 0 < i_wall < i_blank,
+check(("if (sdtheme_wall_enabled())" in render_body or
+       "!sdtheme_wall_enabled() || !sdtheme_render_wall(frame)" in render_body) and
+      0 < i_wall < i_blank,
       "menu_render()：有壁纸走 render_wall，否则回退纯色底")
 
 gen = menu[menu.index("bool generate_patches_progress"):]
 gen = gen[:gen.index("}") + 1]
-check("sdtheme_invalidate();" in gen,
-      "generate_patches_progress()：扫描窗占用 hiscratch 后挂失效标记")
+check("sdtheme_invalidate_scan();" in gen,
+      "generate_patches_progress()：扫描窗占用 hiscratch 后按需挂失效标记")
 
 scan = menu[menu.index("static bool build_patches_progress"):]
 scan = scan[:scan.index("patchengine_process_rom")] if "patchengine_process_rom" in scan else scan[:3000]
-check("sdtheme_invalidate();" in scan,
-      "build_patches_progress()：进扫描循环前先失效（避免把扫描数据当壁纸画）")
+check("sdtheme_invalidate_scan();" in scan,
+      "build_patches_progress()：进扫描循环前按需失效（缓存落在扫描窗才算脏）")
 
 load = menu[menu.index("static void loadrom_progress(unsigned done"):]
 load = load[:load.index("static bool loadrom_progress_abort")]
-check("sdtheme_render_wall_at(frame)" in load,
-      "loadrom_progress()：载入画面铺缓存里的壁纸（不读卡）")
+check("paint_loadbg_wall()" in load and "sdtheme_arm_loadbg(" in menu,
+      "loadrom_progress()：载入画面铺缓存里的壁纸（第一帧只读一次，写 NOR 复用同一份）")
 check("EX_PAL_LOADBG" in load and "EX_PAL_LOADFG" in load,
       "loadrom_progress()：底色/进度条走 v5 扩展色槽")
 check(all(x in menu for x in ("#define EX_PAL_IGMBG", "#define EX_PAL_LOADBG",
@@ -181,8 +183,8 @@ check("MEM_PALETTE[EX_PAL_IGMBG]  = themes[thnum].bg_color;" in reload_body,
       "reload_theme()：游戏内菜单底色有默认值（= BG，无主题时不改变原行为）")
 
 i_cheat = menu.find('WRITE_LOG("Loaded cheats returned %d"')
-check(i_cheat > 0 and "sdtheme_invalidate();" in menu[i_cheat:i_cheat + 500],
-      "作弊码导入后挂失效标记（CHTC 工具占用 0x09000000..0x09300000）")
+check(i_cheat > 0 and "sdtheme_invalidate_scan();" in menu[i_cheat:i_cheat + 500],
+      "作弊码导入后按需挂失效标记（CHTC 工具占用 0x09000000..0x09300000）")
 check("#include \"sdtheme.h\"" in menu, "menu.c 已 include sdtheme.h")
 for fn in ("menu_override_themes", "menu_override_icons", "menu_override_logo",
            "menu_refresh_icons", "menu_copy_themes", "menu_icons_img_ptr",

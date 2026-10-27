@@ -185,6 +185,8 @@ static uint8_t  sdt_tail[SDT_V7_TAIL] __attribute__((aligned(4)));
 static uint8_t  sdt_alpha[SDT_NTHEME][SDT_ALPHA_N];
 static bool     sdt_wall_ready = false; /* 缓存里的壁纸 == 现在该显示的那张 */
 static bool     sdt_dirty  = false;     /* 缓存被别的功能踩了，需要重读 */
+/* 载入 / 写 NOR 那一屏的壁纸已经铺进两个帧缓冲（见 sdtheme_arm_loadbg） */
+static bool     sdt_loadbg_armed = false;
 static uint8_t  sdt_wallmask = 0;       /* bit i = 第 i 套有默认壁纸 */
 static uint8_t  sdt_pagemask = 0;       /* bit p = 第 p 页有自己的图（仅 v3） */
 static uint32_t sdt_pmask_lo = 0;       /* v4：42 位掩码的低 32 位 */
@@ -383,6 +385,7 @@ static bool sdt_install(unsigned set) {
   menu_refresh_icons();
 
   sdt_cur = set;
+  sdt_loadbg_armed = false;     /* 换套了，载入画面那份快照作废 */
   sdt_sync_wall();
   return true;
 }
@@ -452,14 +455,16 @@ bool sdtheme_hib_apply(uint16_t auto_color) {
     }
   }
 #else
-  /* B 版：画进帧缓冲，颜色写**背景**调色板 240..255，tile 交给 menu.c */
-  MEM_PALETTE[SDT_HIB_PAL_FIRST] = auto_color;
-  for (unsigned i = 0; i < n; i++) {
-    const uint8_t *p = buf + 1 + i * 2;
-    MEM_PALETTE[SDT_HIB_PAL_FIRST + 1 + i] = (uint16_t)(p[0] | (p[1] << 8));
-  }
-  for (unsigned i = n; i < SDT_HIB_PAL_MAX; i++)
-    MEM_PALETTE[SDT_HIB_PAL_FIRST + 1 + i] = 0;
+  /* B 版：画进帧缓冲。**这里不允许再往背景调色板写纹理色**（2026-10-26 修）。
+   *
+   * 以前从 240 起写满 15 格，还把没用到的清 0：240..244 是游戏内菜单五色、
+   * 245..247 是整屏三色（游戏内菜单底 / 载入底 / 载入进度条）、248 是选中条、
+   * 249 是底栏底色 —— 全在这 15 格里。于是只要这一套带了纹理，
+   * 载入进度条就变全黑、游戏内菜单配色也跟着错（用户报的「有背景了但进度条是黑的」）。
+   *
+   * 而且 paint_sel_band() 现在只画左侧 3px 竖条、根本不看 tile，
+   * 这些颜色写了也没人用，纯属越界写入。tile 仍然存下来，将来要用再说。 */
+  (void)auto_color;
   memcpy(sdt_sel_tile, buf + 1 + SDT_HIB_PAL_MAX * 2, SDT_HIB_TILE_BYTES);
   sdt_sel_has = true;
 #endif
@@ -829,14 +834,42 @@ bool sdtheme_render_wall(volatile uint8_t *frame) {
 
 // 铺到任意目标（240x144，从 dst 第 0 行开始），**不读卡**。
 // 载入进度画面用它：那时 SD 卡正在读游戏 ROM，绝不能再去读主题文件。
+//
+// 2026-10-26 修：这里以前还有一道 `sdt_cache < 0x09000000 → return false` 的守卫，
+// 而 chis 上缓存候选表最高只有 0x081F0000（见 sdt_cand[]），判据恒成立 ——
+// 于是 loadrom_progress() 永远走纯色分支，编辑器预览里画得出来的「载入壁纸」
+// 在真机上从来不会出现（主题底色是黑的就直接黑屏）。这是死代码，不是配色问题。
+//
+// 守卫的本意没错：缓存落在 ROM 载入区（0x081F0000），载入过半就会被 ROM 数据
+// 整块盖掉，每帧都回缓存取图必然花屏。但载入**第一帧**缓存一定完好（首次回调时
+// 最多才写了开头几 KB，离 0x081F0000 还差着 2MB）——
+// 所以改成「只铺一次」：调用方在第一帧把它铺进两个帧缓冲，之后只管进度条，
+// 再也不回缓存取图，后面被覆盖也就无所谓了。
 // 画不了就返回 false，让调用方退回纯色：
 //   - 缓存被生成补丁踩过（sdt_dirty）→ 里面是垃圾，画出来就是花屏
-//   - 缓存不在 hiscratch（< 0x09000000）→ 那是原生 superfw 的 scratch 退路，
-//     落在 ROM 载入区里，会被 ROM 数据盖掉，同样不能画
-bool sdtheme_render_wall_at(volatile uint8_t *dst) {
-  if (!sdt_loaded || !sdt_wall_ready || sdt_dirty || sdt_cache < 0x09000000)
+bool sdtheme_blit_wall_early(volatile uint8_t *dst) {
+  if (!sdt_loaded || !sdt_wall_ready || sdt_dirty)
     return false;
   sdt_blit_wall(dst);
+  return true;
+}
+
+/* 载入 / 写 NOR 那一屏共用同一份画面：两个帧缓冲各铺一次，之后就不再碰缓存。
+ *
+ * 写 NOR 的流程（loader.c 的 flash_gba_nor）一进门就会 sdtheme_invalidate()，
+ * 因为接下来要把整块 2MB scratch 当 ROM 中转区写满 —— 缓存必然被盖。
+ * 所以铺图必须在标脏之前做：那时 ROM 还一个字节都没写，缓存是完好的。
+ * 以前没这一步，写 NOR 的进度画面永远是纯色（用户报的「烧录页面没有背景」）。 */
+bool sdtheme_loadbg_armed(void) {
+  return sdt_loadbg_armed;
+}
+bool sdtheme_arm_loadbg(void) {
+  if (sdt_loadbg_armed)
+    return true;
+  if (!sdtheme_blit_wall_early(&MEM_VRAM_U8[0]))
+    return false;
+  sdtheme_blit_wall_early(&MEM_VRAM_U8[0xA000]);
+  sdt_loadbg_armed = true;
   return true;
 }
 
@@ -844,6 +877,14 @@ bool sdtheme_render_wall_at(volatile uint8_t *dst) {
 // 这里只打标记，真正的重读放到 sdtheme_poll()，免得在收尾路径上多花时间。
 void sdtheme_invalidate(void) {
   if (sdt_loaded)
+    sdt_dirty = true;
+}
+
+/* 扫描窗（hiscratch 前 1MB + 尾表）和「作弊码工具」都只占 0x09000000 起那段。
+ * 缓存落在 0x081F0000 时根本碰不到 —— 无条件标脏等于每次扫补丁都白丢一次壁纸，
+ * 表现就是「第一次载入要扫补丁的 ROM，载入画面是纯色，第二次起才有图」。 */
+void sdtheme_invalidate_scan(void) {
+  if (sdt_loaded && sdt_cache >= 0x09000000)
     sdt_dirty = true;
 }
 

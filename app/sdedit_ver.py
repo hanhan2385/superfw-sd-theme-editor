@@ -13,7 +13,7 @@ NAME、发布目录名），发版时漏改一处就会出现「标题写 0.31�
 （注意：`app/version.py` 是「烘焙注入」老编辑器那条线的版本号，和这里不是一回事。）
 """
 
-APP_VER = "0.31"
+APP_VER = "0.32"
 
 APP_NAME = "SuperFW SD 主题编辑器"
 APP_TITLE = "%s v%s" % (APP_NAME, APP_VER)

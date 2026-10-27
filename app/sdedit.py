@@ -2575,6 +2575,31 @@ class App:
                      wraplength=238, font=("Microsoft YaHei UI", 8)).pack(fill="x")
             self.color_rows.append((sw, val))
 
+        # ---- 置灰项灰度：SH 只有一处用途（游戏内菜单里点不了的那几项），
+        # 与其让用户去挑一个灰、还容易挑成和底色一样（以前就那样，两项直接隐形），
+        # 不如直接给「文字色往底色混多少」的滑条：0% 和正文一样，100% 等于隐形。
+        shbox = tk.Frame(box, bg=PANEL)
+        shbox.pack(fill="x", padx=12, pady=(5, 2))
+        shead = tk.Frame(shbox, bg=PANEL)
+        shead.pack(fill="x")
+        tk.Label(shead, text="置灰项灰度", bg=PANEL, fg=TEXT, anchor="w",
+                 font=("Microsoft YaHei UI", 8, "bold")).pack(side="left")
+        self.sh_val = tk.Label(shead, text="", bg=PANEL, fg=MUTED,
+                               font=("Consolas", 8))
+        self.sh_val.pack(side="right", padx=(4, 4))
+        # 自己画：tk.Scale 在深色主题上的滑块几乎看不见，和这套界面也不搭。
+        self.sh_canvas = tk.Canvas(shbox, height=26, bg=PANEL, highlightthickness=0,
+                                   bd=0, cursor="hand2")
+        self.sh_canvas.pack(fill="x", pady=(3, 0))
+        self.sh_canvas.bind("<Button-1>", self._sh_click)
+        self.sh_canvas.bind("<B1-Motion>", self._sh_click)
+        self.sh_canvas.bind("<ButtonRelease-1>", self._sh_drop)
+        self.sh_canvas.bind("<Configure>", lambda e: self._draw_sh())
+        self._sh_dragging = False
+        tk.Label(shbox, text="往右越淡；100% 就和底色一样、看不见了",
+                 bg=PANEL, fg=DIM, anchor="w",
+                 font=("Microsoft YaHei UI", 8)).pack(fill="x")
+
         # ---- 整屏界面：这三格管「载入游戏那屏」和「L+R 菜单」，主菜单不吃。
         # 以前是独立弹窗（左栏塞不下），现在并进同一个列表、分一组。
         # 默认「跟随」= 等于这一套的 BG / FG，文件里不写（不升版本）。
@@ -2771,6 +2796,9 @@ class App:
             hx = "#%02x%02x%02x" % c
             sw.configure(bg=hx)
             val.configure(text=hx.upper())
+
+        if getattr(self, "sh_canvas", None) is not None:
+            self._sync_sh()
 
         # 整屏界面那三格：色块画的是「实际生效色」，右边写「跟随 BG」或色值
         rows = getattr(self, "ex_rows", [])
@@ -3052,6 +3080,77 @@ class App:
         self._mark("改 %s 颜色" % ROLES[idx][0])
         self.doc.pals[self.slot][idx] = new
         self.refresh_all()
+
+    # ---- 置灰项灰度 ------------------------------------------------------
+    # SH 只影响「游戏内菜单里点不了的那几项」。滑条直接把它定义成
+    # 「文字色往底色混 k/16」，和固件 reload_theme() 的兜底算法一模一样，
+    # 所以拖出来的颜色放到真机上也成立。
+    def _sh_index(self):
+        """当前 SH 落在这条线上的第几档（0..16）。手挑的灰色也能对上最近的档。"""
+        pal = self.doc.pals[self.slot]
+        ft, bg, sh = pal[2], pal[1], pal[5]
+        best, bd = 0, None
+        for k in range(17):
+            d = 0
+            for i in range(3):
+                c = (ft[i] * (16 - k) + bg[i] * k) // 16
+                d += (c - sh[i]) ** 2
+            if bd is None or d < bd:
+                bd, best = d, k
+        return best
+
+    def _sync_sh(self):
+        """把滑条和右边那行字同步到当前 SH（不触发写色）。"""
+        self._draw_sh()
+        c = self.doc.pals[self.slot][5]
+        k = self._sh_index()
+        self.sh_val.configure(text="%d%%  #%02X%02X%02X"
+                                    % (round(k * 100 / 16), c[0], c[1], c[2]))
+
+    def _sh_geom(self):
+        w = max(80, self.sh_canvas.winfo_width())
+        return 7, w - 7
+
+    def _draw_sh(self):
+        c = getattr(self, "sh_canvas", None)
+        if c is None:
+            return
+        c.delete("all")
+        x0, x1 = self._sh_geom()
+        k = self._sh_index()
+        cx = x0 + (x1 - x0) * k / 16.0
+        c.create_rectangle(x0, 11, x1, 17, fill="#3C3C35", outline="")   # 轨道
+        if cx > x0 + 1:
+            c.create_rectangle(x0, 11, cx, 17, fill="#5C6B24", outline="")  # 已用部分
+        c.create_rectangle(cx - 3, 5, cx + 3, 23, fill=ACC, outline=BG)  # 滑块
+        # 刻度：0 / 50% / 100% 三个点，省得用户不知道两头是什么
+        for t in (0.0, 0.5, 1.0):
+            px = x0 + (x1 - x0) * t
+            c.create_rectangle(px - 1, 19, px + 1, 21, fill=LINE, outline="")
+
+    def _sh_click(self, e):
+        x0, x1 = self._sh_geom()
+        t = (e.x - x0) / max(1, (x1 - x0))
+        self._on_sh_gray(int(round(max(0.0, min(1.0, t)) * 16)))
+        self._draw_sh()
+
+    def _sh_drop(self, _e=None):
+        self._sh_dragging = False
+
+    def _on_sh_gray(self, k):
+        k = max(0, min(16, int(k)))
+        pal = self.doc.pals[self.slot]
+        ft, bg = pal[2], pal[1]
+        new = tuple((ft[i] * (16 - k) + bg[i] * k) // 16 for i in range(3))
+        if tuple(pal[5]) == new:
+            self._sync_sh()
+            return
+        if not self._sh_dragging:
+            self._mark("改置灰项灰度")
+            self._sh_dragging = True
+        pal[5] = new
+        self.refresh_colors()
+        self.refresh_preview()
 
     # ---- 整屏界面那三格（并进颜色列表，不再单开弹窗）
     def pick_excolor(self, j):

@@ -23,6 +23,7 @@
 #include "patchengine.h"
 #include "hackpatch.h"
 #include "rtc_state.h"
+#include "rtc_custom.h"
 
 #pragma GCC optimize ("Os")
 #include "fatfs/ff.h"
@@ -603,15 +604,39 @@ NOINLINE int romsort(const void *a, const void *b) {
   return strcasecmp(&ca->game_name[ca->bnoffset], &cb->game_name[cb->bnoffset]);
 }
 
+/* 载入画面的壁纸只铺一次。
+ *
+ * 缓存（sdt_cand[]，chis 上落在 0x081F0000）在 ROM 载入区里，载入过半就被 ROM
+ * 数据整块盖掉 —— 所以不能每帧回缓存取图（那正是 sdtheme_render_wall_at 以前
+ * 那道 0x09000000 守卫想拦的事，而 chis 上判据恒成立，等于这段功能从没生效，
+ * 真机载入画面一直是纯色，主题底色是黑的就看着像黑屏）。
+ * 改成：done == 0 的第一帧把两个帧缓冲都铺上，之后每帧只补底部 16 行 + 进度条。
+ * 铺不上（没主题 / 这套没壁纸 / 缓存被生成补丁踩过）就沿用原来的整屏纯色。 */
+static bool loadbg_wall_painted;
+
+static bool paint_loadbg_wall(void) {
+  if (loadbg_wall_painted)
+    return true;
+  /* 写 NOR 那条路会在标脏之前自己先 arm（见 flash_gba_nor），这里直接认。 */
+  if (!sdtheme_loadbg_armed() && !sdtheme_arm_loadbg())
+    return false;
+  // 壁纸只到第 144 行，底下 16 行是界面的固定底色（两个缓冲都要补，免得翻页闪一下）
+  dma_memset16(&MEM_VRAM_U8[SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
+  dma_memset16(&MEM_VRAM_U8[0xA000 + SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
+  loadbg_wall_painted = true;
+  return true;
+}
+
 static void loadrom_progress(unsigned done, unsigned total) {
   // Draws and flips the buffer, do not care about vsync here
   volatile uint8_t *frame = &MEM_VRAM_U8[0xA000*framen];
 
-  // 有 SD 主题壁纸就铺上去。只搬内存里已经缓存好的那份，**不读卡** ——
-  // 这时候 SD 卡正在读游戏 ROM，再去读主题文件只会把加载拖慢。
-  // 拿不到（没配壁纸 / 缓存被扫描窗踩了）就退回纯色。
+  // 每次载入的第一次回调（offset 0）重新铺一次，上一次的壁纸不能复用
+  if (done == 0)
+    loadbg_wall_painted = false;
+
   // 底色和进度条用 EX_PAL_* 这两格：v5 主题可以单独指定，没指定时等于 BG/FG。
-  if (sdtheme_render_wall_at(frame))
+  if (paint_loadbg_wall())
     dma_memset16(&frame[SCREEN_WIDTH*144], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*16/2);
   else
     dma_memset16(&frame[0], dup8(EX_PAL_LOADBG), SCREEN_WIDTH*SCREEN_HEIGHT/2);
@@ -678,8 +703,9 @@ static bool build_patches_progress(const char *fn, unsigned fs, bool enhanced,
 
   // 扫描窗从 hiscratch 起点（0x09000000）开始，正好是主题缓存最差的那个退路。
   // 一旦退到那儿，往后几十次 loadrom_progress 都会把扫描数据当壁纸画出来（花屏）。
-  // 先挂失效标记，render_wall_at() 就会老老实实退回纯色。
-  sdtheme_invalidate();
+  // 缓存落在 0x081F0000（chis 上的常态）时碰不到，就别白丢一次壁纸 ——
+  // 以前无条件标脏，导致第一次载入要扫补丁的 ROM 时载入画面是纯色。
+  sdtheme_invalidate_scan();
 
   for (unsigned i = 0; i < fs; i += max_hiscratch) {
     work->base = i;
@@ -724,10 +750,11 @@ static bool build_patches_progress(const char *fn, unsigned fs, bool enhanced,
 
 bool generate_patches_progress(const char *fn, unsigned fs) {
   t_patch patch;
-  // `&&` 会短路，但失效标记必须无条件打：hiscratch 前 1MB 已经被 ROM 数据
-  // 整段盖过一遍了，SD 主题缓存要是退到了那儿，现在已经是 ROM 字节。
+  // `&&` 会短路，但失效标记必须无条件判断：hiscratch 前 1MB 已经被 ROM 数据
+  // 整段盖过一遍了，SD 主题缓存要是退到了那儿，现在已经是 ROM 字节
+  // （sdtheme_invalidate_scan() 只在缓存真的落在扫描窗里时才标脏）。
   bool ok = build_patches_progress(fn, fs, false, &patch) && write_patches_cache(fn, &patch);
-  sdtheme_invalidate();
+  sdtheme_invalidate_scan();
   return ok;
 }
 
@@ -758,6 +785,11 @@ static bool load_hack_record(t_load_gba_info *info) {
   if (info->patches_hack_found)
     return true;
   return load_hack_database(info);
+}
+
+static void fallback_hack_to_database(t_load_gba_info *info) {
+  if (info->patch_type == PatchHack && !info->patches_hack_found && info->patches_datab_found)
+    info->patch_type = PatchDatabase;
 }
 
 static t_patch_policy next_patch_policy(t_patch_policy policy, bool forward) {
@@ -841,18 +873,19 @@ static const t_patch * get_game_patch(const t_load_gba_info *info) {
 
 bool ingame_menu_avail_sdram(const t_load_gba_info *info) {
   const t_patch *p = get_game_patch(info);
+  unsigned image_size = patch_rom_size(info->romfs, p, info->rtc_patch_enabled);
   unsigned cheats = spop.p.load.l.use_cheats ? spop.p.load.l.cheats_size : 0;
   // Necessary size to load the IGM (+fonts +cheats)
   unsigned igm_reqsz = ROUND_UP2(ingame_menu_payload.menu_rsize + font_block_size() + cheats, 1024);
 
   // If the ROM is too big, must use some hole to load the menu.
-  if (info->romfs > MAX_GBA_ROM_SIZE - igm_reqsz) {
+  if (image_size > MAX_GBA_ROM_SIZE - igm_reqsz) {
     if (p && !cheats && p->hole_size < igm_reqsz)
       igm_reqsz = ROUND_UP2(ingame_menu_payload.menu_rsize + font_menu_subset_size(lang_id), 1024);
-    if (info->romfs > MAX_GBA_ROM_SIZE-igm_reqsz && (!p || p->hole_size < igm_reqsz))
+    if (image_size > MAX_GBA_ROM_SIZE-igm_reqsz && (!p || p->hole_size < igm_reqsz))
       igm_reqsz=ROUND_UP2(ingame_menu_compact_payload.menu_rsize+(cheats?font_block_size():font_menu_compact_size(lang_id))+cheats,1024);
     // Discard holes that are too small, or not well formed.
-    if (info->romfs > MAX_GBA_ROM_SIZE-igm_reqsz &&
+    if (image_size > MAX_GBA_ROM_SIZE-igm_reqsz &&
         (!p || p->hole_size < igm_reqsz || p->hole_addr + p->hole_size > info->romfs) &&
         !menu_layout_available(p,cheats)) return false;   // Too big to fit the menu!
   }
@@ -865,7 +898,7 @@ bool ingame_menu_avail_flash(const t_load_gba_info *info) {
   const t_patch *p = get_game_patch(info);
 
   // Checks if the ROM is small enough so the last 4MiB block can be remapped.
-  if (info->romfs > MAX_GBA_ROM_SIZE - NOR_BLOCK_SIZE) {
+  if (patch_rom_size(info->romfs, p, info->rtc_patch_enabled) > MAX_GBA_ROM_SIZE - NOR_BLOCK_SIZE) {
     // Otherwise find a gap to flash on NOR our tiny payload
     if ((!p || p->hole_size < DIRSAVE_REQ_SPACE || p->hole_addr + p->hole_size > info->romfs) &&
         (!p || (!menu_layout_get(p->menu_layout)&&!menu_overlay_profile_get(p->menu_layout))))
@@ -879,14 +912,15 @@ bool ingame_menu_avail_flash(const t_load_gba_info *info) {
 // Calculates whether DirectSaving can be used given some information.
 bool dirsav_avail_sdram(const t_load_gba_info *info) {
   const t_patch *p = get_game_patch(info);
+  unsigned image_size = patch_rom_size(info->romfs, p, info->rtc_patch_enabled);
   if(p && p->menu_layout && info->ingame_menu_enabled) {
     unsigned required=ingame_menu_payload.menu_rsize+font_menu_subset_size(lang_id)+DIRSAVE_REQ_SPACE;
-    if(info->romfs>MAX_GBA_ROM_SIZE-required && p->hole_size<required)
+    if(image_size>MAX_GBA_ROM_SIZE-required && p->hole_size<required)
       return false;
   }
 
   // Check if there's enough space for it! (Placing it at the end).
-  if (info->romfs > MAX_GBA_ROM_SIZE - DIRSAVE_REQ_SPACE) {
+  if (image_size > MAX_GBA_ROM_SIZE - DIRSAVE_REQ_SPACE) {
     if (!p || p->hole_size < DIRSAVE_REQ_SPACE || p->hole_addr + p->hole_size > info->romfs)
       return false;   // Too big to fit!
   }
@@ -898,7 +932,7 @@ bool dirsav_avail_flash(const t_load_gba_info *info) {
   const t_patch *p = get_game_patch(info);
 
   // Checks if the ROM is small enough so the last 4MiB block can be remapped.
-  if (info->romfs > MAX_GBA_ROM_SIZE - NOR_BLOCK_SIZE) {
+  if (patch_rom_size(info->romfs, p, info->rtc_patch_enabled) > MAX_GBA_ROM_SIZE - NOR_BLOCK_SIZE) {
     // Otherwise find a gap to flash on NOR our tiny payload
     if (!p || p->hole_size < DIRSAVE_REQ_SPACE || p->hole_addr + p->hole_size > info->romfs)
       return false;   // Too big to fit!
@@ -916,6 +950,9 @@ static bool prepare_selected_hack_patches(t_load_gba_info *info, bool load_sdram
   if (info->patch_type != PatchHack)
     return true;
   if (!load_hack_record(info)) {
+    fallback_hack_to_database(info);
+    if (info->patch_type == PatchDatabase)
+      return true;
     spop.alert_msg = msgs[lang_id][MSG_HACKPATCH_FAIL];
     return false;
   }
@@ -995,13 +1032,14 @@ static bool prepare_gba_info(
 
   if (info->patch_type == PatchHack)
     load_hack_record(info);
+  fallback_hack_to_database(info);
 
   // Fill defaults as requested if possible.
+  info->rtc_patch_enabled = st->use_rtc && rtcemu_avail(info);
   bool allowigm = load_sdram ? ingame_menu_avail_sdram(info) : ingame_menu_avail_flash(info);
   info->ingame_menu_enabled = st->use_igm && allowigm;
   bool allowds = load_sdram ? dirsav_avail_sdram(info) : dirsav_avail_flash(info);
 
-  info->rtc_patch_enabled = st->use_rtc && rtcemu_avail(info);
   info->use_dsaving = st->use_dsaving && allowds;
 
   return true;
@@ -1046,8 +1084,8 @@ static void prepare_gba_cheats(const char *gcode, uint8_t ver, t_load_gba_lcfg *
 
       // 导入作弊码时会把 CHTC 工具搬到 0x09000000 当代码段跑，工作区在
       // 0x09100000 / 0x09200000 —— 主题缓存要退到了 hiscratch 起点，前 64KB
-      // 已经被覆盖成工具代码了。挂失效标记，回菜单重读。
-      sdtheme_invalidate();
+      // 已经被覆盖成工具代码了。挂失效标记，回菜单重读（缓存不在扫描窗里就不必）。
+      sdtheme_invalidate_scan();
   }
   data->use_cheats = enable_cheats && data->cheats_found && prefer_cheats;
 }
@@ -1620,6 +1658,11 @@ static uint16_t mix555(uint16_t a, uint16_t b, unsigned k) {
  * 表现就是「设置页底栏区域出现黑色斑块」。放到 248/249，这两格确实没人用。 */
 #define SEL_SLOT    248
 #define BAR_BG      249
+
+/* 置灰项（SH）和内容底色的最小亮度差（5 位色加权，满值 47）。
+ * 低于它就当「撞色」，自动换成文字色往底色混 44% —— 用户那套 SH == BG（差 0），
+ * 游戏内菜单里两只不可用项直接隐形；第 2~6 套最小 40，不会被误伤。 */
+#define SDT_SH_MIN_DELTA  30
 static uint8_t sdt_bar_alpha = 0;           /* 当前套的底栏透明度 0..16（0 = 实心） */
 
 static const uint8_t bayer4[4][4] __attribute__((unused)) = {
@@ -2586,6 +2629,19 @@ void reload_theme(unsigned thnum) {
   MEM_PALETTE[EX_PAL_LOADBG] = themes[thnum].bg_color;
   MEM_PALETTE[EX_PAL_LOADFG] = themes[thnum].fg_color;
 
+  /* 置灰项（SH）要是和内容底色撞了，游戏内菜单里那几项就是隐形的 ——
+   * 第 1 套 SH 和 BG 都是 #383838，用户只看到 4 项，「时钟模拟/金手指」凭空消失。
+   * 亮度差太小就自动换成「文字色往底色混 44%」：看得出是灰的，又明显比正常项暗。
+   * 只在真撞色时动手（第 2~6 套亮度差都够，不受影响）。 */
+  {
+    uint16_t sh = themes[thnum].sh_color, bgc = themes[thnum].bg_color;
+    int lsh = 3 * (int)(sh & 31) + 6 * (int)((sh >> 5) & 31) + (int)((sh >> 10) & 31);
+    int lbg = 3 * (int)(bgc & 31) + 6 * (int)((bgc >> 5) & 31) + (int)((bgc >> 10) & 31);
+    int d = lsh > lbg ? lsh - lbg : lbg - lsh;
+    if (d < SDT_SH_MIN_DELTA)
+      MEM_PALETTE[IGM_PAL_SH] = mix555(themes[thnum].ft_color, bgc, 7);
+  }
+
   // SD 卡主题：切到别的套时把那一套的图标换成 SD 卡上的（内部会比对，
   // 没变化就直接返回，不读卡）。
   sdtheme_apply_theme(thnum);
@@ -3160,8 +3216,10 @@ static void keypress_popup_loadgba(unsigned newkeys) {
     if (!spop.p.load.i.patches_datab_found && spop.p.load.i.patch_type == PatchDatabase)
       spop.p.load.i.patch_type = PatchNone;
 
-    if (spop.submenu == GbaLoadPopPatch && spop.selector == GBALoadPatch)
+    if (spop.submenu == GbaLoadPopPatch && spop.selector == GBALoadPatch) {
       load_hack_record(&spop.p.load.i);
+      fallback_hack_to_database(&spop.p.load.i);
+    }
 
     if (!dirsav_avail_sdram(&spop.p.load.i))
       spop.p.load.i.use_dsaving = false;
@@ -3210,8 +3268,10 @@ static void keypress_popup_loadgba(unsigned newkeys) {
     if (!spop.p.load.i.patches_cache_found && spop.p.load.i.patch_type == PatchEngine)
       spop.p.load.i.patch_type = PatchNone;
 
-    if (spop.submenu == GbaLoadPopPatch && spop.selector == GBALoadPatch)
+    if (spop.submenu == GbaLoadPopPatch && spop.selector == GBALoadPatch) {
       load_hack_record(&spop.p.load.i);
+      fallback_hack_to_database(&spop.p.load.i);
+    }
 
     if (!dirsav_avail_sdram(&spop.p.load.i))
       spop.p.load.i.use_dsaving = false;
@@ -3426,8 +3486,10 @@ static void keypress_popup_norwrite(unsigned newkeys) {
         spop.p.norwr.i.patch_type = PatchNone;
     }
 
-    if ((newkeys & (KEY_BUTTLEFT|KEY_BUTTRIGHT)) && spop.selector == GBALoadPatch)
+    if ((newkeys & (KEY_BUTTLEFT|KEY_BUTTRIGHT)) && spop.selector == GBALoadPatch) {
       load_hack_record(&spop.p.norwr.i);
+      fallback_hack_to_database(&spop.p.norwr.i);
+    }
 
     // Disable certain features (depends on patch types)
     if (!dirsav_avail_flash(&spop.p.norwr.i))
@@ -3450,16 +3512,16 @@ static void keypress_popup_norwrite(unsigned newkeys) {
     }
   } else {
     if (newkeys & KEY_BUTTA) {
+      if (!prepare_selected_hack_patches(&spop.p.norwr.i, false))
+        return;
+      const t_load_gba_info *info = &spop.p.norwr.i;
+      const t_patch *p = get_game_patch(info);
       // Check whether we have enough space.
-      unsigned blkcnt = (spop.p.norwr.i.romfs + NOR_BLOCK_SIZE - 1) / NOR_BLOCK_SIZE;
+      unsigned image_size = patch_rom_size(info->romfs, p, info->rtc_patch_enabled);
+      unsigned blkcnt = (image_size + NOR_BLOCK_SIZE - 1) / NOR_BLOCK_SIZE;
       if (smenu.fbrowser.freeblks < blkcnt || smenu.fbrowser.maxentries + 1 >= FLASHG_MAXFN_CNT)
         spop.alert_msg = msgs[lang_id][MSG_ERR_NORSPC];
       else {
-        if (!prepare_selected_hack_patches(&spop.p.norwr.i, false))
-          return;
-        const t_load_gba_info *info = &spop.p.norwr.i;
-        const t_patch *p = get_game_patch(info);
-
         // Allocate the last entry for the new game.
         t_flash_game_entry ne = {
           .gamecode = *(uint32_t*)info->romh.gcode,

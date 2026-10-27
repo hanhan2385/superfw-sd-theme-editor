@@ -11,7 +11,7 @@ look appears on the next boot. **You flash the firmware once; after that you onl
 
 ## Three steps
 
-1. Download the .exe from [Releases](../../releases) and double-click it
+1. Download the .exe from [Releases](../../releases) and double-click it (no Python needed)
 2. Tune things, then *Save as…* to produce `theme.bin`
 3. Copy it to `/.superfw/` on the SD card and boot
 
