@@ -134,7 +134,6 @@ def main(argv):
 
     print("上传 blob ...")
     entries = []
-    changed = []          # 只放新增/改动的条目，配合 base_tree 增量提交
     fresh = reused = 0
     for i, rel in enumerate(files, 1):
         full = os.path.join(ROOT, rel)
@@ -155,34 +154,16 @@ def main(argv):
                          "encoding": "base64"}, tok=tok)
         except SystemExit as e:
             raise SystemExit("文件 %s 上传失败：%s" % (rel, e))
-        item = {"path": rel, "mode": mode, "type": "blob", "sha": blob["sha"]}
-        entries.append(item)
-        changed.append(item)
+        entries.append({"path": rel, "mode": mode, "type": "blob", "sha": blob["sha"]})
         fresh += 1
         if fresh % 40 == 0:
             print("  已传 %d 个" % fresh)
     print("  新上传 %d 个，复用 %d 个" % (fresh, reused))
 
-    # 远程有、本地已删除的文件，用 sha=None 在增量树里删掉
-    deleted = [p for p in remote_map if p not in set(files)]
-    for p in deleted:
-        changed.append({"path": p, "mode": "100644", "type": "blob", "sha": None})
-    if deleted:
-        print("  删除 %d 个远程多余文件" % len(deleted))
-
     # 3) tree
     print("创建 tree ...")
-    # 有远程 head 就做增量树（base_tree + 只带改动条目）：GitHub 对「一次几百个
-    # 条目的完整树」会直接 422 超时（2026-10-27 实测 558 个条目必失败）。
-    if head_sha and remote_map:
-        base_tree = call("GET", "/repos/%s/git/commits/%s" % (repo, head_sha),
-                         tok=tok)["tree"]["sha"]
-        tree = call("POST", "/repos/%s/git/trees" % repo,
-                    {"base_tree": base_tree, "tree": changed}, tok=tok)
-        print("  增量树：%d 个条目（base %s）" % (len(changed), base_tree[:8]))
-    else:
-        tree = call("POST", "/repos/%s/git/trees" % repo,
-                    {"tree": entries}, tok=tok)
+    tree = call("POST", "/repos/%s/git/trees" % repo,
+                {"tree": entries}, tok=tok)
 
     # 4) commit（不带 parent，作为首个提交）
     if "--message" in argv:
